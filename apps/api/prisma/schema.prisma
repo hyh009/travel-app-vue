@@ -18,5 +18,16 @@ model User {
   passwordHash String
   name         String?
   createdAt    DateTime @default(now())
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id Int @id @default(autoincrement())
+  tokenHash String @unique
+  userId Int
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
 }
 
