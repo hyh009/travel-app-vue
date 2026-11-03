@@ -31,3 +31,19 @@ model RefreshToken {
   createdAt DateTime  @default(now())
 }
 
+model Attraction {
+  id          String  @id
+  name        String
+  description String
+  city        String
+  town        String
+  lat         Float
+  lng         Float
+  isFree      Boolean
+  website     String?
+
+  @@index([lat, lng])
+  @@index([city])
+}
+
+

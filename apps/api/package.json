@@ -7,7 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "lint": "eslint .",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev && prisma generate"
+    "db:migrate": "prisma migrate dev && prisma generate",
+    "db:seed": "tsx src/scripts/seed-attractions.ts"
   },
   "keywords": [],
   "author": "",
