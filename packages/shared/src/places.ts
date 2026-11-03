@@ -35,6 +35,8 @@ export interface PlaceSummary {
   lat: number
   lng: number
   isFree: boolean
+  // 訪客一律為 false
+  isFavorite: boolean
 }
 
 export interface PlaceDetail extends PlaceSummary {

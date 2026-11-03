@@ -17,9 +17,12 @@ export interface AuthTokens {
 }
 
 export function setAuthCookies(res: Response, tokens: AuthTokens) {
+  // The cookie outlives the JWT on purpose: an expired token still reaches the
+  // server, so it can answer 401 and let the client refresh, instead of the
+  // browser silently dropping it and the request looking like a guest's.
   res.cookie(ACCESS_COOKIE, tokens.accessToken, {
     ...cookieBase,
-    maxAge: config.accessTokenTtlSeconds * 1000,
+    maxAge: config.refreshTokenTtlMs,
   })
   res.cookie(REFRESH_COOKIE, tokens.refreshToken, {
     ...cookieBase,

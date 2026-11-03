@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser'
 import { config } from './lib/config.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import authRouter from './routes/auth.js'
+import favoritesRouter from './routes/favorites.js'
 import placesRouter from './routes/places.js'
 
 const app = express()
@@ -18,6 +19,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/places', placesRouter)
+app.use('/api/favorites', favoritesRouter)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
