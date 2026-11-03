@@ -275,6 +275,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@travel/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       pinia:
         specifier: ^4.0.3
         version: 4.1.0(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.44(typescript@6.0.3))
