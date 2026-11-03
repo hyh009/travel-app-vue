@@ -10,6 +10,8 @@ export const ERROR_CODES = [
   'NOT_FOUND',
   'EMAIL_TAKEN',
   'INTERNAL_ERROR',
+  'QUOTA_EXCEEDED',
+  'UPSTREAM_ERROR',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]
