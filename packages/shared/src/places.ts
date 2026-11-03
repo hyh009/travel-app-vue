@@ -1,9 +1,6 @@
 import { z } from 'zod'
 
-export const PLACE_TYPES = ['restaurant', 'hotel', 'attraction'] as const
-export type PlaceType = (typeof PLACE_TYPES)[number]
-
-const MAX_SPAN_DEGREES = 0.1
+const MAX_SPAN_DEGREES = 0.5
 
 const DECIMAL = /^-?\d+(\.\d+)?$/
 
@@ -16,7 +13,6 @@ const coord = (limit: number) =>
 
 export const placesQuerySchema = z
   .object({
-    type: z.enum(PLACE_TYPES),
     swLat: coord(90),
     swLng: coord(180),
     neLat: coord(90),
@@ -31,19 +27,27 @@ export const placesQuerySchema = z
 
 export type PlacesQuery = z.output<typeof placesQuerySchema>
 
-export interface Place {
+export interface PlaceSummary {
   id: string
-  type: PlaceType
   name: string
-  rating: number | null
-  reviewCount: number | null
-  tags: string[]
-  photoUrl: string | null
+  city: string
+  town: string
   lat: number
   lng: number
-  url: string
+  isFree: boolean
+}
+
+export interface PlaceDetail extends PlaceSummary {
+  description: string
+  website: string | null
 }
 
 export interface PlacesResponse {
-  places: Place[]
+  places: PlaceSummary[]
+  // 範圍內符合的總數;大於 places.length 代表被截斷
+  total: number
+}
+
+export interface PlaceDetailResponse {
+  place: PlaceDetail
 }

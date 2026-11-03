@@ -13,14 +13,11 @@ export const errors: Record<ErrorCode, { status: number; message: string }> = {
   USER_NOT_FOUND: { status: 401, message: 'User no longer exists' },
   // 404
   NOT_FOUND: { status: 404, message: 'Route not found' },
+  PLACE_NOT_FOUND: { status: 404, message: 'Place not found' },
   // 409
   EMAIL_TAKEN: { status: 409, message: 'Email already registered' },
-  // 429
-  QUOTA_EXCEEDED: { status: 429, message: 'Monthly place search quota exceeded' },
   // 500
   INTERNAL_ERROR: { status: 500, message: 'Internal server error' },
-  // 502
-  UPSTREAM_ERROR: { status: 502, message: 'Place data provider failed' },
 }
 
 export class HttpError extends Error {
