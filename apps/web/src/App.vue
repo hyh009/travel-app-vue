@@ -1,11 +1,12 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { mdiMapMarker } from '@mdi/js'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <v-app>
+    <v-main>
+      <v-btn color="primary" :prepend-icon="mdiMapMarker">Vuetify works</v-btn>
+      <v-rating model-value="4" readonly />
+    </v-main>
+  </v-app>
 </template>
-
-<style scoped></style>
