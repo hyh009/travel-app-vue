@@ -205,6 +205,9 @@ importers:
       '@prisma/client':
         specifier: 7.10.1
         version: 7.10.1(prisma@7.10.1(@types/node@24.19.2)(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(typescript@6.0.3)
+      '@travel/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -336,6 +339,16 @@ importers:
       vue-tsc:
         specifier: ^3.3.11
         version: 3.3.14(typescript@6.0.3)
+
+  packages/shared:
+    dependencies:
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
 packages:
 
