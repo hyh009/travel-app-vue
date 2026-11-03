@@ -19,6 +19,7 @@ model User {
   name          String?
   createdAt     DateTime       @default(now())
   refreshTokens RefreshToken[]
+  favorites Favorite[]
 }
 
 model RefreshToken {
@@ -44,6 +45,22 @@ model Attraction {
   isFree      Boolean
   website     String?
 
+  favorites Favorite[]
+
   @@index([lat, lng])
   @@index([city])
 }
+
+model Favorite {
+  userId       Int
+  attractionId String
+  createdAt    DateTime   @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attraction Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, attractionId])
+  @@index([userId, createdAt])
+  @@index([attractionId])
+}
+

@@ -2,7 +2,6 @@ import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 
-const BATCH_SIZE = 1000
 const DATA_FILE = new URL('../../data/attractions.json', import.meta.url)
 
 const rawAttractionSchema = z.object({
@@ -35,11 +34,13 @@ async function main() {
     }))
   console.log(`Read ${rows.length} attractions`)
 
-  const batches = []
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    batches.push(prisma.attraction.createMany({ data: rows.slice(i, i + BATCH_SIZE) }))
-  }
-  await prisma.$transaction([prisma.attraction.deleteMany(), ...batches])
+  // Sync instead of delete-and-reinsert: Favorite rows reference Attraction with
+  // ON DELETE CASCADE, so wiping the table would wipe every user's favorites.
+  const upserts = rows.map((row) =>
+    prisma.attraction.upsert({ where: { id: row.id }, create: row, update: row }),
+  )
+  const stale = prisma.attraction.deleteMany({ where: { id: { notIn: rows.map((r) => r.id) } } })
+  await prisma.$transaction([...upserts, stale])
 
   console.log(`Seeded ${await prisma.attraction.count()} attractions`)
 }
