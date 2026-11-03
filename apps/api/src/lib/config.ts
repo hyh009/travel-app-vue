@@ -15,6 +15,5 @@ export const config = {
   isProd: process.env.NODE_ENV === 'production',
   accessTokenTtlSeconds: 15 * 60,
   refreshTokenTtlMs: 7 * 24 * 60 * 60 * 1000,
-  rapidApiKey: required('RAPIDAPI_KEY'),
-  redisUrl: required('REDIS_URL'),
+  redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6380',
 }
