@@ -1,9 +1,10 @@
+import type { AuthResponse } from '@travel/shared'
 import { Router } from 'express'
 import { REFRESH_COOKIE, clearAuthCookies, setAuthCookies } from '../lib/cookies.js'
 import { HttpError } from '../lib/errors.js'
 import { parseBody } from '../lib/validate.js'
 import { requireAuth } from '../middleware/requireAuth.js'
-import { loginSchema, registerSchema } from '../schemas/auth.js'
+import { loginSchema, registerSchema } from '@travel/shared'
 import * as authService from '../services/auth.service.js'
 
 const router = Router()
@@ -12,14 +13,14 @@ router.post('/register', async (req, res) => {
   const input = parseBody(registerSchema, req.body)
   const { user, tokens } = await authService.register(input)
   setAuthCookies(res, tokens)
-  res.status(201).json({ user })
+  res.status(201).json({ user } satisfies AuthResponse)
 })
 
 router.post('/login', async (req, res) => {
   const input = parseBody(loginSchema, req.body)
   const { user, tokens } = await authService.login(input)
   setAuthCookies(res, tokens)
-  res.json({ user })
+  res.json({ user } satisfies AuthResponse)
 })
 
 router.post('/refresh', async (req, res) => {
@@ -43,7 +44,7 @@ router.get('/me', requireAuth, async (req, res) => {
   if (!req.userId) {
     throw new HttpError('NOT_AUTHENTICATED')
   }
-  res.json({ user: await authService.getUser(req.userId) })
+  res.json({ user: await authService.getUser(req.userId) } satisfies AuthResponse)
 })
 
 export default router

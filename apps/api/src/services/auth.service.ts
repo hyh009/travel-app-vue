@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import { HttpError } from '../lib/errors.js'
 import { prisma } from '../lib/prisma.js'
 import { createRefreshToken, hashToken, signAccessToken } from '../lib/tokens.js'
-import type { LoginInput, RegisterInput } from '../schemas/auth.js'
+import type { LoginInput, PublicUser, RegisterInput } from '@travel/shared'
 
 const publicUserSelect = {
   id: true,
@@ -10,6 +10,20 @@ const publicUserSelect = {
   name: true,
   createdAt: true,
 } as const
+
+function toPublicUser(user: {
+  id: number
+  email: string
+  name: string | null
+  createdAt: Date
+}): PublicUser {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    createdAt: user.createdAt.toISOString(),
+  }
+}
 
 async function issueTokens(userId: number) {
   return {
@@ -30,7 +44,7 @@ export async function register(input: RegisterInput) {
     select: publicUserSelect,
   })
 
-  return { user, tokens: await issueTokens(user.id) }
+  return { user: toPublicUser(user), tokens: await issueTokens(user.id) }
 }
 
 export async function login(input: LoginInput) {
@@ -40,7 +54,7 @@ export async function login(input: LoginInput) {
   }
 
   return {
-    user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+    user: toPublicUser(user),
     tokens: await issueTokens(user.id),
   }
 }
@@ -87,5 +101,5 @@ export async function getUser(userId: number) {
   if (!user) {
     throw new HttpError('USER_NOT_FOUND')
   }
-  return user
+  return toPublicUser(user)
 }

@@ -1,4 +1,6 @@
-export const errors = {
+import type { ErrorCode } from '@travel/shared'
+
+export const errors: Record<ErrorCode, { status: number; message: string }> = {
   // 400
   VALIDATION_FAILED: { status: 400, message: 'Invalid input' },
   INVALID_JSON: { status: 400, message: 'Request body is not valid JSON' },
@@ -15,9 +17,7 @@ export const errors = {
   EMAIL_TAKEN: { status: 409, message: 'Email already registered' },
   // 500
   INTERNAL_ERROR: { status: 500, message: 'Internal server error' },
-} as const satisfies Record<string, { status: number; message: string }>
-
-export type ErrorCode = keyof typeof errors
+}
 
 export class HttpError extends Error {
   code: ErrorCode

@@ -1,10 +1,12 @@
+import type { ApiErrorBody, ErrorCode } from '@travel/shared'
 import type { NextFunction, Request, Response } from 'express'
-import { HttpError, errors, type ErrorCode } from '../lib/errors.js'
+import { HttpError, errors } from '../lib/errors.js'
 
 function send(res: Response, code: ErrorCode, details?: unknown) {
-  res.status(errors[code].status).json({
+  const body: ApiErrorBody = {
     error: { code, message: errors[code].message, details },
-  })
+  }
+  res.status(errors[code].status).json(body)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
