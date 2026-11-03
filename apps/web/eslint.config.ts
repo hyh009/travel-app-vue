@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { globalIgnores } from 'eslint/config'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import pluginVue from 'eslint-plugin-vue'
@@ -23,4 +24,10 @@ export default defineConfigWithVueTs(
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
 
   skipFormatting,
+
+  {
+    languageOptions: {
+      parserOptions: { tsconfigRootDir: fileURLToPath(new URL('.', import.meta.url)) },
+    },
+  },
 )
