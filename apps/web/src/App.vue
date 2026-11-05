@@ -1,12 +1,8 @@
-<script setup lang="ts">
-import { mdiMapMarker } from '@mdi/js'
-</script>
-
 <template>
   <v-app>
+    <v-app-bar title="台灣景點" />
     <v-main>
-      <v-btn color="primary" :prepend-icon="mdiMapMarker">Vuetify works</v-btn>
-      <v-rating model-value="4" readonly />
+      <RouterView />
     </v-main>
   </v-app>
 </template>
