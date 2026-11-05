@@ -1,7 +1,7 @@
 import { onWatcherCleanup, ref, shallowRef, watch, type Ref } from 'vue'
 import type { PlacesQuery, PlacesResponse } from '@travel/shared'
 import { fetchPlaces } from '@/services/places.service'
-import { isAbortError } from '@/utils/errors'
+import { isAbortError } from '@/api/error'
 
 export function usePlaces(bounds: Ref<PlacesQuery | null>) {
   const data = shallowRef<PlacesResponse | null>(null)
