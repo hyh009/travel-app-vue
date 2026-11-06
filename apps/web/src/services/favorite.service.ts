@@ -8,3 +8,11 @@ export function fetchFavorites(query: FavoritesQuery, signal?: AbortSignal) {
   })
   return request<FavoritesResponse>(`/favorites?${params}`, { signal })
 }
+
+export function addFavorite(attractionId: string) {
+  return request<void>(`/favorites/${encodeURIComponent(attractionId)}`, { method: 'PUT' })
+}
+
+export function removeFavorite(attractionId: string) {
+  return request<void>(`/favorites/${encodeURIComponent(attractionId)}`, { method: 'DELETE' })
+}

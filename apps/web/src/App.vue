@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
 import { ROUTE_NAME } from '@/router/utils'
+import { useToast } from '@/composables/useToast'
+const { state: toast } = useToast()
 
 const auth = useAuthStore()
 </script>
@@ -21,5 +23,12 @@ const auth = useAuthStore()
     <v-main>
       <RouterView />
     </v-main>
+    <v-snackbar
+      v-model="toast.show"
+      :color="toast.type"
+      timeout="3000"
+    >
+      {{ toast.message }}
+    </v-snackbar>
   </v-app>
 </template>
