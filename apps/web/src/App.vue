@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
-import { ROUTE_NAME } from '@/router'
+import { ROUTE_NAME } from '@/router/utils'
 
 const auth = useAuthStore()
 </script>
@@ -9,7 +9,8 @@ const auth = useAuthStore()
   <v-app>
     <v-app-bar title="台灣景點">
       <template v-if="auth.user">
-        <span class="mr-2">{{ auth.user.name ?? auth.user.email }}</span>
+        <v-btn :to="{ name: ROUTE_NAME.FAVORITES }">收藏</v-btn>
+        <span class="mx-2">{{ auth.user.name ?? auth.user.email }}</span>
         <v-btn @click="auth.logout()">登出</v-btn>
       </template>
       <template v-else>

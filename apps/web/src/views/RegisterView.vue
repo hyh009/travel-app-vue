@@ -5,11 +5,12 @@ import { ApiError } from '@/api/error'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/utils/errorMessages'
 import { mdiAccountOutline, mdiEmailOutline, mdiEye, mdiEyeOff, mdiLockOutline } from '@mdi/js'
-import { useRouter } from 'vue-router'
-import { ROUTE_NAME } from '@/router'
+import { useRouter, useRoute } from 'vue-router'
+import { ROUTE_NAME, safeRedirect } from '@/router/utils'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const form = reactive({ name: '', email: '', password: '' })
 const errors = ref<Partial<Record<'name' | 'email' | 'password' | 'form', string>>>({})
@@ -34,7 +35,7 @@ async function submit() {
   submitting.value = true
   try {
     await auth.register(result.data)
-    await router.push({ name: ROUTE_NAME.HOME })
+    await router.push(safeRedirect(route.query.redirect))
   } catch (err) {
     if (err instanceof ApiError && err.code === 'EMAIL_TAKEN') {
       errors.value = { email: errorMessage(err) }
@@ -111,7 +112,7 @@ async function submit() {
 
       <div class="text-center mt-4 text-body-2">
         已經有帳號?
-        <router-link :to="{ name: ROUTE_NAME.LOGIN }">登入</router-link>
+        <router-link :to="{ name: ROUTE_NAME.LOGIN, query: route.query }">登入</router-link>
       </div>
     </v-card>
   </v-container>

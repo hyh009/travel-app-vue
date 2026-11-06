@@ -1,17 +1,13 @@
 import { useAuthStore } from '@/stores/auth'
 import { createRouter, createWebHistory } from 'vue-router'
+import { ROUTE_NAME } from './utils'
 
 declare module 'vue-router' {
   interface RouteMeta {
     guestOnly?: boolean
+    requiresAuth?: boolean
   }
 }
-
-export const ROUTE_NAME = {
-  HOME: 'home',
-  LOGIN: 'login',
-  REGISTER: 'register',
-} as const
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +25,12 @@ const router = createRouter({
       component: () => import('@/views/RegisterView.vue'),
       meta: { guestOnly: true },
     },
+    {
+      path: '/favorites',
+      name: ROUTE_NAME.FAVORITES,
+      component: () => import('@/views/FavoritesView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
@@ -36,6 +38,9 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.guestOnly && auth.isLoggedIn) {
     return { name: ROUTE_NAME.HOME }
+  }
+  if (to.meta.requiresAuth && !auth.isLoggedIn) {
+    return { name: ROUTE_NAME.LOGIN, query: { redirect: to.fullPath } }
   }
 })
 

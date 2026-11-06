@@ -5,11 +5,12 @@ import { ApiError } from '@/api/error'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/utils/errorMessages'
 import { mdiEmailOutline, mdiEye, mdiEyeOff, mdiLockOutline } from '@mdi/js'
-import { useRouter } from 'vue-router'
-import { ROUTE_NAME } from '@/router'
+import { useRouter, useRoute } from 'vue-router'
+import { ROUTE_NAME, safeRedirect } from '@/router/utils'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const form = reactive({ email: '', password: '' })
 const fieldErrors = ref<Partial<Record<'email' | 'password', string>>>({})
@@ -38,7 +39,7 @@ async function submit() {
   submitting.value = true
   try {
     await auth.login(result.data)
-    await router.push({ name: ROUTE_NAME.HOME })
+    await router.push(safeRedirect(route.query.redirect))
   } catch (err) {
     if (err instanceof ApiError && err.code === 'INVALID_CREDENTIALS') {
       credentialsError.value = errorMessage(err)
@@ -108,7 +109,7 @@ async function submit() {
 
       <div class="text-center mt-4 text-body-2">
         還沒有帳號?
-        <router-link :to="{ name: ROUTE_NAME.REGISTER }">註冊</router-link>
+        <router-link :to="{ name: ROUTE_NAME.REGISTER, query: route.query }">註冊</router-link>
       </div>
     </v-card>
   </v-container>
