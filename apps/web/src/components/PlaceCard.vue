@@ -1,33 +1,127 @@
 <script setup lang="ts">
-import { mdiHeart, mdiHeartOutline } from '@mdi/js'
+import { mdiHeart, mdiHeartOutline, mdiMapMarkerOutline } from '@mdi/js'
 import type { PlaceSummary } from '@travel/shared'
 
 interface Props {
   place: PlaceSummary
+  selected?: boolean
 }
 
 const props = defineProps<Props>()
 </script>
 
 <template>
-  <v-card>
-    <v-card-item>
-      <v-card-title>{{ props.place.name }}</v-card-title>
-      <v-card-subtitle>{{ props.place.city }}{{ props.place.town }}</v-card-subtitle>
-      <template #append>
-        <v-icon
-          :icon="place.isFavorite ? mdiHeart : mdiHeartOutline"
-          :color="place.isFavorite ? 'red' : undefined"
-        />
-      </template>
-    </v-card-item>
-    <v-card-text>
-      <v-chip
-        size="small"
-        :color="place.isFree ? 'success' : undefined"
+  <article
+    class="card"
+    :class="{ selected: props.selected }"
+  >
+    <!-- 還沒有景點圖片,先用漸層色塊佔位 -->
+    <div class="cover">
+      <span
+        class="badge"
+        :class="[place.isFree ? 'free' : 'paid']"
       >
         {{ place.isFree ? '免費' : '收費' }}
-      </v-chip>
-    </v-card-text>
-  </v-card>
+      </span>
+      <span
+        class="heart"
+        :class="{ active: place.isFavorite }"
+      >
+        <v-icon
+          :icon="place.isFavorite ? mdiHeart : mdiHeartOutline"
+          size="20"
+        />
+      </span>
+    </div>
+
+    <div class="body">
+      <h3 class="name">{{ place.name }}</h3>
+      <p class="location">
+        <v-icon
+          :icon="mdiMapMarkerOutline"
+          size="16"
+        />
+        {{ place.city }}{{ place.town }}
+      </p>
+    </div>
+  </article>
 </template>
+
+<style scoped>
+.card {
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
+  border-radius: 10px;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  cursor: pointer;
+  /* 用 outline 而不是 border:選取時不會改變卡片尺寸,列表不會跳動 */
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color 0.15s;
+}
+
+.card.selected {
+  outline-color: rgb(var(--v-theme-primary));
+}
+
+.cover {
+  position: relative;
+  height: 120px;
+  background: linear-gradient(135deg, rgb(var(--v-theme-primary)), rgb(var(--v-theme-secondary)));
+}
+
+.badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: white;
+}
+
+.badge.free {
+  background: rgb(var(--v-theme-success));
+}
+
+.badge.paid {
+  background: #37474f;
+}
+
+.heart {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: #546e7a;
+}
+
+.heart.active {
+  color: #e53935;
+}
+
+.body {
+  padding: 12px;
+}
+
+.name {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.location {
+  margin: 4px 0 0;
+  font-size: 14px;
+  opacity: 0.7;
+}
+</style>

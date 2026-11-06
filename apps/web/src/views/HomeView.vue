@@ -56,6 +56,7 @@ watch(data, () => {
   width: 400px;
   flex-shrink: 0;
   overflow-y: auto;
+  padding: 12px;
 }
 .map-container {
   flex: 1;
