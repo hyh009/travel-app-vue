@@ -49,7 +49,7 @@ function renderMarkers() {
   layer.clearLayers()
   for (const place of props.places) {
     L.circleMarker([place.lat, place.lng], markerStyle(place.id === props.selectedId))
-      .bindTooltip(place.name)
+      .bindTooltip(place.name, { direction: 'top', offset: [0, -8], className: 'place-tip' })
       .on('click', () => emit('select', place.id))
       .addTo(layer)
   }
@@ -93,5 +93,28 @@ watch([() => props.places, () => props.selectedId], renderMarkers)
 .map {
   width: 100%;
   height: 100%;
+}
+</style>
+
+<style>
+/* tooltip 是 Leaflet 自己建立的 DOM,不在這個元件的 scope 內,所以用全域樣式 */
+.place-tip {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+  font-size: 15px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #263238;
+  /* Leaflet 預設 0.9 的透明度,地圖文字會透出來 */
+  opacity: 1;
+  /* Leaflet 預設不換行;長名稱限制寬度後換行 */
+  max-width: 220px;
+  white-space: normal;
+  width: max-content;
+}
+.place-tip.leaflet-tooltip-top::before {
+  border-top-color: #fff;
 }
 </style>

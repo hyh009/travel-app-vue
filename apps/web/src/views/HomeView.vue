@@ -27,10 +27,10 @@ function handleFocusCard(id: string) {
 
 const { data, loading, error } = usePlaces(bounds)
 
-function scrollToSelected() {
+function scrollToSelected(options?: ScrollIntoViewOptions) {
   const id = selectedId.value
   const el = id ? listRef.value?.querySelector(`[data-id="${CSS.escape(id)}"]`) : null
-  if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  if (el) el.scrollIntoView(options)
   else listRef.value?.scrollTo({ top: 0 })
 }
 
@@ -45,6 +45,10 @@ watch(
   },
   { flush: 'post' },
 )
+
+watch(selectedId, () => scrollToSelected(), {
+  flush: 'post',
+})
 </script>
 <template>
   <div class="main">
