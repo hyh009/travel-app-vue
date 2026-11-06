@@ -6,18 +6,26 @@ import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
 
 const bounds = ref<PlacesQuery | null>(null)
+const selectedId = ref<string | null>(null)
 
 function handleBoundsChange(value: PlacesQuery) {
   bounds.value = value
 }
+
+function handleSelectIdChange(value: string) {
+  selectedId.value = value
+}
+
 const { data, loading, error } = usePlaces(bounds)
 </script>
 <template>
   <v-container>
     <div style="height: 400px">
       <PlaceMap
-        @bounds-change="handleBoundsChange"
         :places="data?.places ?? []"
+        :selected-id="selectedId"
+        @bounds-change="handleBoundsChange"
+        @select="handleSelectIdChange"
       />
     </div>
     <PlaceList

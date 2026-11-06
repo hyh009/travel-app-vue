@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { PlacesQuery, PlaceSummary } from '@travel/shared'
+import { round, markerStyle } from '@/utils/map'
 
 const DEFAULT_MAP_CENTER: L.LatLngTuple = [25.04, 121.55]
 const DEFAULT_ZOOM_VALUE = 14
@@ -10,10 +11,13 @@ const DEFAULT_ZOOM_VALUE = 14
 // ── 對外介面 ──
 interface Props {
   places: PlaceSummary[]
+  selectedId: string | null
 }
+
 const props = defineProps<Props>()
 const emit = defineEmits<{
   'bounds-change': [bounds: PlacesQuery]
+  select: [id: string]
 }>()
 
 // ── 內部狀態 ──
@@ -22,10 +26,7 @@ const container = useTemplateRef<HTMLDivElement>('mapContainer')
 let map: L.Map | null = null
 let layer: L.LayerGroup | null = null
 
-// ── 函式 ──
-// 小數 5 位約 1 公尺
-const round = (n: number) => Math.round(n * 1e5) / 1e5
-
+// ── Function ──
 function emitBounds() {
   if (!map) return
   const b = map.getBounds()
@@ -41,7 +42,10 @@ function renderMarkers() {
   if (!layer) return
   layer.clearLayers()
   for (const place of props.places) {
-    L.circleMarker([place.lat, place.lng], { radius: 8 }).addTo(layer)
+    L.circleMarker([place.lat, place.lng], markerStyle(place.id === props.selectedId))
+      .bindTooltip(place.name)
+      .on('click', () => emit('select', place.id))
+      .addTo(layer)
   }
 }
 
@@ -69,7 +73,7 @@ onBeforeUnmount(() => {
 })
 
 // ── 監聽 ──
-watch(() => props.places, renderMarkers)
+watch([() => props.places, () => props.selectedId], renderMarkers)
 </script>
 
 <template>
