@@ -36,6 +36,8 @@ export default defineConfigWithVueTs(
     rules: {
       // 模板用了沒 import 的元件時報錯(Vuetify 與 router 的元件是全域註冊,排除)
       'vue/no-undef-components': ['error', { ignorePatterns: ['^v-', '^router-'] }],
+      // 屬性順序統一(v-for/v-if → ref/key → v-model → 一般屬性 → 事件)
+      'vue/attributes-order': 'error',
     },
   },
 )
