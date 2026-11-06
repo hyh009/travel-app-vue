@@ -8,4 +8,9 @@ export default createVuetify({
     aliases,
     sets: { mdi },
   },
+  theme: {
+    themes: {
+      light: { colors: { primary: '#2e9292', secondary: '#546E7A' } },
+    },
+  },
 })
