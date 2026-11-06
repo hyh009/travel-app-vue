@@ -40,4 +40,22 @@ export default defineConfigWithVueTs(
       'vue/attributes-order': 'error',
     },
   },
+
+  {
+    name: 'app/import-style',
+    rules: {
+      // 跨資料夾一律用 @/ 別名;只有同資料夾的 ./xxx 可以用相對路徑
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*', './*/*'],
+              message: '跨資料夾請使用 @/ 別名,例如 @/composables/useToast',
+            },
+          ],
+        },
+      ],
+    },
+  },
 )
