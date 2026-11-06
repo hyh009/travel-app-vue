@@ -30,4 +30,12 @@ export default defineConfigWithVueTs(
       parserOptions: { tsconfigRootDir: fileURLToPath(new URL('.', import.meta.url)) },
     },
   },
+
+  {
+    name: 'app/vue-rules',
+    rules: {
+      // 模板用了沒 import 的元件時報錯(Vuetify 與 router 的元件是全域註冊,排除)
+      'vue/no-undef-components': ['error', { ignorePatterns: ['^v-', '^router-'] }],
+    },
+  },
 )
