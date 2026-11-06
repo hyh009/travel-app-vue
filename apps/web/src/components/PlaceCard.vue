@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mdiHeart, mdiHeartOutline, mdiMapMarkerOutline } from '@mdi/js'
+import { mdiHeart, mdiHeartOutline, mdiMapMarkerOutline, mdiCrosshairsGps } from '@mdi/js'
 import type { PlaceSummary } from '@travel/shared'
 
 interface Props {
@@ -11,6 +11,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'select-card': [id: string]
+  'focus-card': [id: string]
 }>()
 </script>
 
@@ -18,7 +19,7 @@ const emit = defineEmits<{
   <article
     class="card"
     :class="{ selected: props.selected }"
-    @click="emit('select-card', place.id)"
+    @click.stop="emit('select-card', place.id)"
   >
     <!-- 還沒有景點圖片,先用漸層色塊佔位 -->
     <div class="cover">
@@ -28,15 +29,28 @@ const emit = defineEmits<{
       >
         {{ place.isFree ? '免費' : '收費' }}
       </span>
-      <span
-        class="heart"
-        :class="{ active: place.isFavorite }"
-      >
-        <v-icon
-          :icon="place.isFavorite ? mdiHeart : mdiHeartOutline"
-          size="20"
-        />
-      </span>
+      <div class="actions">
+        <button
+          class="focus-btn"
+          type="button"
+          aria-label="在地圖上顯示"
+          @click.stop="emit('focus-card', place.id)"
+        >
+          <v-icon
+            :icon="mdiCrosshairsGps"
+            size="20"
+          />
+        </button>
+        <span
+          class="heart"
+          :class="{ active: place.isFavorite }"
+        >
+          <v-icon
+            :icon="place.isFavorite ? mdiHeart : mdiHeartOutline"
+            size="20"
+          />
+        </span>
+      </div>
     </div>
 
     <div class="body">
@@ -106,10 +120,15 @@ const emit = defineEmits<{
   background: #37474f;
 }
 
-.heart {
+.actions {
   position: absolute;
   top: 6px;
   right: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.heart {
   width: 32px;
   height: 32px;
   display: flex;
@@ -122,6 +141,27 @@ const emit = defineEmits<{
 
 .heart.active {
   color: #e53935;
+}
+
+.focus-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: #546e7a;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.focus-btn:hover {
+  background: white;
+  transform: scale(1.1);
 }
 
 .body {

@@ -13,7 +13,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{ 'select-card': [id: string] }>()
+const emit = defineEmits<{ 'select-card': [id: string]; 'focus-card': [id: string] }>()
 
 const notice = computed(() => {
   if (props.error) return '載入失敗,請稍後再試'
@@ -43,7 +43,9 @@ const notice = computed(() => {
       :key="place.id"
       :place="place"
       :selected="place.id === props.selectedId"
+      :data-id="place.id"
       @select-card="emit('select-card', $event)"
+      @focus-card="emit('focus-card', $event)"
     />
   </div>
 </template>

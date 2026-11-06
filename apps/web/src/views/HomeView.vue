@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, useTemplateRef, watch } from 'vue'
-import type { PlacesQuery } from '@travel/shared'
+import { type PlacesQuery } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
@@ -8,20 +8,43 @@ import PlaceMap from '@/components/PlaceMap.vue'
 const bounds = ref<PlacesQuery | null>(null)
 const selectedId = ref<string | null>(null)
 const listRef = useTemplateRef<HTMLDivElement>('listContainer')
+const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
 
 function handleBoundsChange(value: PlacesQuery) {
   bounds.value = value
 }
 
-function handleSelectIdChange(value: string) {
-  selectedId.value = value
+function handleSelectIdChange(id: string) {
+  selectedId.value = id
+}
+
+function handleFocusCard(id: string) {
+  selectedId.value = id
+  const targetPlace = data.value?.places.find((p) => p.id === id)
+  if (!targetPlace) return
+  mapRef.value?.flyTo(targetPlace.lat, targetPlace.lng)
 }
 
 const { data, loading, error } = usePlaces(bounds)
 
-watch(data, () => {
-  listRef?.value?.scrollTo({ top: 0 })
-})
+function scrollToSelected() {
+  const id = selectedId.value
+  const el = id ? listRef.value?.querySelector(`[data-id="${CSS.escape(id)}"]`) : null
+  if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  else listRef.value?.scrollTo({ top: 0 })
+}
+
+// 資料換了之後:flush: 'post' 代表 DOM 已更新,不用 nextTick
+watch(
+  data,
+  (value) => {
+    if (selectedId.value && !value?.places.some((p) => p.id === selectedId.value)) {
+      selectedId.value = null
+    }
+    scrollToSelected()
+  },
+  { flush: 'post' },
+)
 </script>
 <template>
   <div class="main">
@@ -36,10 +59,12 @@ watch(data, () => {
         :error="error"
         :selected-id="selectedId"
         @select-card="handleSelectIdChange"
+        @focus-card="handleFocusCard"
       />
     </div>
     <div class="map-container">
       <PlaceMap
+        ref="placeMap"
         :places="data?.places ?? []"
         :selected-id="selectedId"
         @bounds-change="handleBoundsChange"

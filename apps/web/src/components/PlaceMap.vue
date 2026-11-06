@@ -19,6 +19,7 @@ const emit = defineEmits<{
   'bounds-change': [bounds: PlacesQuery]
   select: [id: string]
 }>()
+defineExpose({ flyTo })
 
 // ── 內部狀態 ──
 // Leaflet 實例不用 ref:避免被 Vue 包成 Proxy
@@ -27,6 +28,11 @@ let map: L.Map | null = null
 let layer: L.LayerGroup | null = null
 
 // ── Function ──
+function flyTo(lat: number, lng: number) {
+  if (!map) return
+  map.flyTo([lat, lng], Math.max(map.getZoom(), 15))
+}
+
 function emitBounds() {
   if (!map) return
   const b = map.getBounds()
