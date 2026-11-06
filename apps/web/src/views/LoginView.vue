@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
+import { loginSchema } from '@travel/shared'
 import { ApiError } from '@/api/error'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/utils/errorMessages'
@@ -11,19 +12,40 @@ const auth = useAuthStore()
 const router = useRouter()
 
 const form = reactive({ email: '', password: '' })
+const fieldErrors = ref<Partial<Record<'email' | 'password', string>>>({})
+// 帳號或密碼錯:兩個欄位都標紅,訊息只顯示一次
+const credentialsError = ref<string | null>(null)
+// 斷線、伺服器錯誤:不屬於任何欄位,顯示在按鈕上方
 const formError = ref<string | null>(null)
 const submitting = ref(false)
 const showPassword = ref(false)
 
 async function submit() {
+  credentialsError.value = null
   formError.value = null
+
+  const result = loginSchema.safeParse(form)
+  if (!result.success) {
+    const failed = new Set(result.error.issues.map((issue) => issue.path[0]))
+    fieldErrors.value = {
+      email: failed.has('email') ? 'Email 格式不正確' : undefined,
+      password: failed.has('password') ? '請輸入密碼' : undefined,
+    }
+    return
+  }
+  fieldErrors.value = {}
+
   submitting.value = true
   try {
-    await auth.login(form)
+    await auth.login(result.data)
     await router.push({ name: ROUTE_NAME.HOME })
   } catch (err) {
-    formError.value = errorMessage(err)
-    if (!(err instanceof ApiError)) console.error(err)
+    if (err instanceof ApiError && err.code === 'INVALID_CREDENTIALS') {
+      credentialsError.value = errorMessage(err)
+    } else {
+      formError.value = errorMessage(err)
+      if (!(err instanceof ApiError)) console.error(err)
+    }
   } finally {
     submitting.value = false
   }
@@ -52,7 +74,8 @@ async function submit() {
           variant="outlined"
           autocomplete="email"
           :prepend-inner-icon="mdiEmailOutline"
-          :error="!!formError"
+          :error="!!credentialsError"
+          :error-messages="fieldErrors.email"
         />
         <v-text-field
           v-model="form.password"
@@ -62,9 +85,15 @@ async function submit() {
           :type="showPassword ? 'text' : 'password'"
           :prepend-inner-icon="mdiLockOutline"
           :append-inner-icon="showPassword ? mdiEyeOff : mdiEye"
-          :error-messages="formError ?? undefined"
+          :error-messages="fieldErrors.password ?? credentialsError ?? undefined"
           @click:append-inner="showPassword = !showPassword"
         />
+        <div
+          v-if="formError"
+          class="text-error text-body-2 mb-2"
+        >
+          {{ formError }}
+        </div>
         <v-btn
           type="submit"
           color="primary"
@@ -76,6 +105,11 @@ async function submit() {
           登入
         </v-btn>
       </v-form>
+
+      <div class="text-center mt-4 text-body-2">
+        還沒有帳號?
+        <router-link :to="{ name: ROUTE_NAME.REGISTER }">註冊</router-link>
+      </div>
     </v-card>
   </v-container>
 </template>

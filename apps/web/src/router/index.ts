@@ -10,6 +10,7 @@ declare module 'vue-router' {
 export const ROUTE_NAME = {
   HOME: 'home',
   LOGIN: 'login',
+  REGISTER: 'register',
 } as const
 
 const router = createRouter({
@@ -20,6 +21,12 @@ const router = createRouter({
       path: '/login',
       name: ROUTE_NAME.LOGIN,
       component: () => import('@/views/LoginView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/register',
+      name: ROUTE_NAME.REGISTER,
+      component: () => import('@/views/RegisterView.vue'),
       meta: { guestOnly: true },
     },
   ],

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
+import { ROUTE_NAME } from '@/router'
 
 const auth = useAuthStore()
 </script>
@@ -12,7 +13,8 @@ const auth = useAuthStore()
         <v-btn @click="auth.logout()">登出</v-btn>
       </template>
       <template v-else>
-        <v-btn :to="{ name: 'login' }">登入</v-btn>
+        <v-btn :to="{ name: ROUTE_NAME.LOGIN }">登入</v-btn>
+        <v-btn :to="{ name: ROUTE_NAME.REGISTER }">註冊</v-btn>
       </template>
     </v-app-bar>
     <v-main>
