@@ -8,12 +8,17 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  'select-card': [id: string]
+}>()
 </script>
 
 <template>
   <article
     class="card"
     :class="{ selected: props.selected }"
+    @click="emit('select-card', place.id)"
   >
     <!-- 還沒有景點圖片,先用漸層色塊佔位 -->
     <div class="cover">
@@ -58,11 +63,21 @@ const props = defineProps<Props>()
   /* 用 outline 而不是 border:選取時不會改變卡片尺寸,列表不會跳動 */
   outline: 2px solid transparent;
   outline-offset: -2px;
-  transition: outline-color 0.15s;
+  transition:
+    outline-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
 .card.selected {
   outline-color: rgb(var(--v-theme-primary));
+  transform: translateY(-2px);
+  box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 底部文字區淡淡的主色底 */
+.card.selected .body {
+  background: rgba(var(--v-theme-primary), 0.18);
 }
 
 .cover {

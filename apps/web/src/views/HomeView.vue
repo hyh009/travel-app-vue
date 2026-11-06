@@ -34,6 +34,8 @@ watch(data, () => {
         :total="data?.total ?? 0"
         :loading="loading"
         :error="error"
+        :selected-id="selectedId"
+        @select-card="handleSelectIdChange"
       />
     </div>
     <div class="map-container">
