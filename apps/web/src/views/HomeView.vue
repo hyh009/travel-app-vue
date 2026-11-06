@@ -15,7 +15,10 @@ const { data, loading, error } = usePlaces(bounds)
 <template>
   <v-container>
     <div style="height: 400px">
-      <PlaceMap @bounds-change="handleBoundsChange" />
+      <PlaceMap
+        @bounds-change="handleBoundsChange"
+        :places="data?.places ?? []"
+      />
     </div>
     <PlaceList
       :places="data?.places ?? []"
