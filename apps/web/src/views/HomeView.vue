@@ -4,6 +4,7 @@ import { type PlacesQuery } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
+import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
 
 const bounds = ref<PlacesQuery | null>(null)
 const selectedId = ref<string | null>(null)
@@ -25,13 +26,21 @@ function handleFocusCard(id: string) {
   mapRef.value?.flyTo(targetPlace.lat, targetPlace.lng)
 }
 
-const { data, loading, error } = usePlaces(bounds)
+const { data, loading, error, setFavorite } = usePlaces(bounds)
+const { toggleFavorite } = useFavoriteToggle(setFavorite)
 
 function scrollToSelected(options?: ScrollIntoViewOptions) {
   const id = selectedId.value
   const el = id ? listRef.value?.querySelector(`[data-id="${CSS.escape(id)}"]`) : null
   if (el) el.scrollIntoView(options)
   else listRef.value?.scrollTo({ top: 0 })
+}
+
+function handleToggleFavorite(attractionId: string) {
+  if (!data.value) return
+  const targetPlace = data.value.places.find((p) => p.id === attractionId)
+  if (!targetPlace) return
+  toggleFavorite(targetPlace)
 }
 
 // 資料換了之後:flush: 'post' 代表 DOM 已更新,不用 nextTick
@@ -64,6 +73,7 @@ watch(selectedId, () => scrollToSelected(), {
         :selected-id="selectedId"
         @select-card="handleSelectIdChange"
         @focus-card="handleFocusCard"
+        @toggle-favorite="handleToggleFavorite"
       />
     </div>
     <div class="map-container">

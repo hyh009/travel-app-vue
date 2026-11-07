@@ -12,6 +12,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'select-card': [id: string]
   'focus-card': [id: string]
+  'toggle-favorite': [id: string]
 }>()
 </script>
 
@@ -41,15 +42,18 @@ const emit = defineEmits<{
             size="20"
           />
         </button>
-        <span
+        <button
           class="heart"
           :class="{ active: place.isFavorite }"
+          type="button"
+          :aria-label="place.isFavorite ? '取消收藏' : '加入收藏'"
+          @click.stop="emit('toggle-favorite', place.id)"
         >
           <v-icon
             :icon="place.isFavorite ? mdiHeart : mdiHeartOutline"
             size="20"
           />
-        </span>
+        </button>
       </div>
     </div>
 
@@ -137,6 +141,8 @@ const emit = defineEmits<{
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.85);
   color: #546e7a;
+  border: none;
+  cursor: pointer;
 }
 
 .heart.active {

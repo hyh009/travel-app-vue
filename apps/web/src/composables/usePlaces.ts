@@ -8,6 +8,14 @@ export function usePlaces(bounds: Ref<PlacesQuery | null>) {
   const loading = ref(false)
   const error = ref<Error | null>(null)
 
+  function setFavorite(id: string, isFavorite: boolean) {
+    if (!data.value) return
+    data.value = {
+      ...data.value,
+      places: data.value.places.map((p) => (p.id === id ? { ...p, isFavorite } : p)),
+    }
+  }
+
   watch(
     bounds,
     async (value) => {
@@ -29,5 +37,5 @@ export function usePlaces(bounds: Ref<PlacesQuery | null>) {
     },
     { immediate: true },
   )
-  return { data, loading, error }
+  return { data, loading, error, setFavorite }
 }
