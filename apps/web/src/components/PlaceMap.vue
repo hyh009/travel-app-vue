@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { PlacesQuery, PlaceSummary } from '@travel/shared'
-import { round, markerStyle } from '@/utils/map'
+import { round, markerStyle, placeTooltip } from '@/utils/map'
 
 const DEFAULT_MAP_CENTER: L.LatLngTuple = [25.04, 121.55]
 const DEFAULT_ZOOM_VALUE = 14
@@ -66,6 +66,7 @@ function syncMarkers() {
     )
       .bindTooltip(place.name, { direction: 'top', offset: [0, -8], className: 'place-tip' })
       .on('click', () => emit('select', place.id))
+      .on('tooltipopen', (e: L.TooltipEvent) => map && placeTooltip(map, e.tooltip, marker))
       .addTo(layer)
     markers.set(place.id, marker)
     if (place.id === props.hoveredId) marker.openTooltip()
@@ -154,5 +155,14 @@ watch(
 }
 .place-tip.leaflet-tooltip-top::before {
   border-top-color: #fff;
+}
+.place-tip.leaflet-tooltip-bottom::before {
+  border-bottom-color: #fff;
+}
+.place-tip.leaflet-tooltip-left::before {
+  border-left-color: #fff;
+}
+.place-tip.leaflet-tooltip-right::before {
+  border-right-color: #fff;
 }
 </style>
