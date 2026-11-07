@@ -102,7 +102,6 @@ watch(selectedId, () => scrollToSelected(), {
         :loading="loading"
         :error="error"
         :selected-id="selectedId"
-        @select-card="handleSelectIdChange"
         @hover-card="handleHoverIdChange"
         @focus-card="handleFocusCard"
         @toggle-favorite="handleToggleFavorite"

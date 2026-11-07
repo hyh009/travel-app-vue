@@ -10,7 +10,6 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'select-card': [id: string]
   'focus-card': [id: string]
   'toggle-favorite': [id: string]
   'hover-card': [id: string | null]
@@ -21,7 +20,6 @@ const emit = defineEmits<{
   <article
     class="card"
     :class="{ selected: props.selected }"
-    @click.stop="emit('select-card', place.id)"
     @mouseenter="emit('hover-card', place.id)"
     @mouseleave="emit('hover-card', null)"
   >
@@ -38,7 +36,7 @@ const emit = defineEmits<{
           class="focus-btn"
           type="button"
           aria-label="在地圖上顯示"
-          @click.stop="emit('focus-card', place.id)"
+          @click="emit('focus-card', place.id)"
           @focus="emit('hover-card', place.id)"
           @blur="emit('hover-card', null)"
         >
@@ -52,7 +50,7 @@ const emit = defineEmits<{
           :class="{ active: place.isFavorite }"
           type="button"
           :aria-label="place.isFavorite ? '取消收藏' : '加入收藏'"
-          @click.stop="emit('toggle-favorite', place.id)"
+          @click="emit('toggle-favorite', place.id)"
         >
           <v-icon
             :icon="place.isFavorite ? mdiHeart : mdiHeartOutline"
@@ -82,7 +80,6 @@ const emit = defineEmits<{
   border-radius: 10px;
   box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  cursor: pointer;
   /* 用 outline 而不是 border:選取時不會改變卡片尺寸,列表不會跳動 */
   outline: 2px solid transparent;
   outline-offset: -2px;
