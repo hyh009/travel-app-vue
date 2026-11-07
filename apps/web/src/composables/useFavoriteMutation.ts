@@ -4,25 +4,29 @@ import { useToast } from '@/composables/useToast'
 import { errorMessage } from '@/utils/errorMessages'
 
 // apply:把某個景點的收藏狀態寫進「這個畫面自己的資料」(列表頁與收藏頁的資料來源不同,所以由呼叫端傳入)
-export function useFavoriteToggle(apply: (id: string, isFavorite: boolean) => void) {
+export function useFavoriteMutation(apply: (id: string, isFavorite: boolean) => void) {
   const toast = useToast()
 
-  async function toggleFavorite(place: Pick<PlaceSummary, 'id' | 'name' | 'isFavorite'>) {
-    const { id, name, isFavorite: current } = place
-    const next = !current
-
+  // 把某個景點的收藏狀態改成 next;回傳是否成功(成功要不要提示,由呼叫端決定)
+  async function changeFavorite(id: string, next: boolean, name = '此景點') {
     // 1. 樂觀更新
     apply(id, next)
 
     try {
       // 2. request
       await (next ? addFavorite(id) : removeFavorite(id))
+      return true
     } catch (err) {
       // 3. 失敗:只把這一筆設回原本的值,並告訴使用者
-      apply(id, current)
+      apply(id, !next)
       toast.show(`「${name}」${next ? '收藏' : '取消收藏'}失敗:${errorMessage(err)}`, 'error')
+      return false
     }
   }
 
-  return { toggleFavorite }
+  function toggleFavorite(place: Pick<PlaceSummary, 'id' | 'name' | 'isFavorite'>) {
+    return changeFavorite(place.id, !place.isFavorite, place.name)
+  }
+
+  return { toggleFavorite, changeFavorite }
 }

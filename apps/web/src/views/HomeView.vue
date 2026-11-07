@@ -1,15 +1,27 @@
 <script setup lang="ts">
-import { ref, useTemplateRef, watch } from 'vue'
+import { ref, useTemplateRef, watch, onMounted } from 'vue'
 import { type PlacesQuery } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
-import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
+import { useFavoriteMutation } from '@/composables/useFavoriteMutation'
+import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
+import { useRouter, useRoute } from 'vue-router'
+import { ROUTE_NAME } from '@/router/utils'
+
+const router = useRouter()
+const route = useRoute()
+const auth = useAuthStore()
+const toast = useToast()
 
 const bounds = ref<PlacesQuery | null>(null)
 const selectedId = ref<string | null>(null)
 const listRef = useTemplateRef<HTMLDivElement>('listContainer')
 const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
+
+const { data, loading, error, setFavorite } = usePlaces(bounds)
+const { toggleFavorite, changeFavorite } = useFavoriteMutation(setFavorite)
 
 function handleBoundsChange(value: PlacesQuery) {
   bounds.value = value
@@ -26,9 +38,6 @@ function handleFocusCard(id: string) {
   mapRef.value?.flyTo(targetPlace.lat, targetPlace.lng)
 }
 
-const { data, loading, error, setFavorite } = usePlaces(bounds)
-const { toggleFavorite } = useFavoriteToggle(setFavorite)
-
 function scrollToSelected(options?: ScrollIntoViewOptions) {
   const id = selectedId.value
   const el = id ? listRef.value?.querySelector(`[data-id="${CSS.escape(id)}"]`) : null
@@ -37,11 +46,28 @@ function scrollToSelected(options?: ScrollIntoViewOptions) {
 }
 
 function handleToggleFavorite(attractionId: string) {
+  if (!auth.isLoggedIn) {
+    toast.show('請先登入才能收藏', 'info')
+    const redirect = router.resolve({
+      name: ROUTE_NAME.HOME,
+      query: { favorite: attractionId },
+    }).fullPath
+    router.push({ name: ROUTE_NAME.LOGIN, query: { redirect } })
+    return
+  }
   if (!data.value) return
   const targetPlace = data.value.places.find((p) => p.id === attractionId)
   if (!targetPlace) return
   toggleFavorite(targetPlace)
 }
+
+onMounted(async () => {
+  const id = route.query.favorite
+  if (typeof id !== 'string' || !auth.isLoggedIn) return
+
+  if (await changeFavorite(id, true)) toast.show('已加入收藏', 'success')
+  router.replace({ query: {} })
+})
 
 // 資料換了之後:flush: 'post' 代表 DOM 已更新,不用 nextTick
 watch(
