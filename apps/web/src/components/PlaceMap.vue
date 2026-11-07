@@ -12,6 +12,7 @@ const DEFAULT_ZOOM_VALUE = 14
 interface Props {
   places: PlaceSummary[]
   selectedId: string | null
+  hoveredId: string | null
 }
 
 const props = defineProps<Props>()
@@ -26,6 +27,7 @@ defineExpose({ flyTo })
 const container = useTemplateRef<HTMLDivElement>('mapContainer')
 let map: L.Map | null = null
 let layer: L.LayerGroup | null = null
+const markers = new Map<string, L.CircleMarker>()
 
 // ── Function ──
 function flyTo(lat: number, lng: number) {
@@ -44,14 +46,29 @@ function emitBounds() {
   })
 }
 
-function renderMarkers() {
+// 讓地圖上的標記和 props.places 一致:多的刪掉、少的補上、已經有的不動
+function syncMarkers() {
   if (!layer) return
-  layer.clearLayers()
+  const ids = new Set(props.places.map((p) => p.id))
+
+  for (const [id, marker] of markers) {
+    if (!ids.has(id)) {
+      layer.removeLayer(marker)
+      markers.delete(id)
+    }
+  }
+
   for (const place of props.places) {
-    L.circleMarker([place.lat, place.lng], markerStyle(place.id === props.selectedId))
+    if (markers.has(place.id)) continue
+    const marker = L.circleMarker(
+      [place.lat, place.lng],
+      markerStyle(place.id === props.selectedId),
+    )
       .bindTooltip(place.name, { direction: 'top', offset: [0, -8], className: 'place-tip' })
       .on('click', () => emit('select', place.id))
       .addTo(layer)
+    markers.set(place.id, marker)
+    if (place.id === props.hoveredId) marker.openTooltip()
   }
 }
 
@@ -69,17 +86,38 @@ onMounted(() => {
 
   map.on('moveend', emitBounds)
   emitBounds()
-  renderMarkers()
+  syncMarkers()
 })
 
 onBeforeUnmount(() => {
   map?.remove()
   map = null
   layer = null
+  markers.clear()
 })
 
 // ── 監聽 ──
-watch([() => props.places, () => props.selectedId], renderMarkers)
+watch(() => props.places, syncMarkers)
+
+watch(
+  () => props.selectedId,
+  (next, prev) => {
+    if (prev) markers.get(prev)?.setStyle(markerStyle(false))
+    if (next) {
+      const marker = markers.get(next)
+      marker?.setStyle(markerStyle(true))
+      marker?.bringToFront()
+    }
+  },
+)
+
+watch(
+  () => props.hoveredId,
+  (next, prev) => {
+    if (prev) markers.get(prev)?.closeTooltip()
+    if (next) markers.get(next)?.openTooltip()
+  },
+)
 </script>
 
 <template>

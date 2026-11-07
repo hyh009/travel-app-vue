@@ -17,6 +17,7 @@ const emit = defineEmits<{
   'select-card': [id: string]
   'focus-card': [id: string]
   'toggle-favorite': [id: string]
+  'hover-card': [id: string | null]
 }>()
 
 const notice = computed(() => {
@@ -49,6 +50,7 @@ const notice = computed(() => {
       :selected="place.id === props.selectedId"
       :data-id="place.id"
       @select-card="emit('select-card', $event)"
+      @hover-card="emit('hover-card', $event)"
       @focus-card="emit('focus-card', $event)"
       @toggle-favorite="emit('toggle-favorite', $event)"
     />

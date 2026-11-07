@@ -19,6 +19,7 @@ const bounds = ref<PlacesQuery | null>(null)
 const selectedId = ref<string | null>(null)
 const listRef = useTemplateRef<HTMLDivElement>('listContainer')
 const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
+const hoveredId = ref<string | null>(null)
 
 const { data, loading, error, setFavorite } = usePlaces(bounds, () => auth.user?.id)
 const { toggleFavorite, changeFavorite } = useFavoriteMutation(setFavorite)
@@ -29,6 +30,10 @@ function handleBoundsChange(value: PlacesQuery) {
 
 function handleSelectIdChange(id: string) {
   selectedId.value = id
+}
+
+function handleHoverIdChange(id: string | null) {
+  hoveredId.value = id
 }
 
 function handleFocusCard(id: string) {
@@ -98,6 +103,7 @@ watch(selectedId, () => scrollToSelected(), {
         :error="error"
         :selected-id="selectedId"
         @select-card="handleSelectIdChange"
+        @hover-card="handleHoverIdChange"
         @focus-card="handleFocusCard"
         @toggle-favorite="handleToggleFavorite"
       />
@@ -107,6 +113,7 @@ watch(selectedId, () => scrollToSelected(), {
         ref="placeMap"
         :places="data?.places ?? []"
         :selected-id="selectedId"
+        :hovered-id="hoveredId"
         @bounds-change="handleBoundsChange"
         @select="handleSelectIdChange"
       />

@@ -13,6 +13,7 @@ const emit = defineEmits<{
   'select-card': [id: string]
   'focus-card': [id: string]
   'toggle-favorite': [id: string]
+  'hover-card': [id: string | null]
 }>()
 </script>
 
@@ -21,6 +22,8 @@ const emit = defineEmits<{
     class="card"
     :class="{ selected: props.selected }"
     @click.stop="emit('select-card', place.id)"
+    @mouseenter="emit('hover-card', place.id)"
+    @mouseleave="emit('hover-card', null)"
   >
     <!-- 還沒有景點圖片,先用漸層色塊佔位 -->
     <div class="cover">
@@ -36,6 +39,8 @@ const emit = defineEmits<{
           type="button"
           aria-label="在地圖上顯示"
           @click.stop="emit('focus-card', place.id)"
+          @focus="emit('hover-card', place.id)"
+          @blur="emit('hover-card', null)"
         >
           <v-icon
             :icon="mdiCrosshairsGps"
