@@ -7,6 +7,7 @@ import { errorMessage } from '@/utils/errorMessages'
 import { mdiEmailOutline, mdiEye, mdiEyeOff, mdiLockOutline } from '@mdi/js'
 import { useRouter, useRoute } from 'vue-router'
 import { ROUTE_NAME, safeRedirect } from '@/router/utils'
+import AppTextField from '@/components/AppTextField.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -68,20 +69,18 @@ async function submit() {
       </div>
 
       <v-form @submit.prevent="submit">
-        <v-text-field
+        <AppTextField
           v-model="form.email"
           label="Email"
           type="email"
-          variant="outlined"
           autocomplete="email"
           :prepend-inner-icon="mdiEmailOutline"
           :error="!!credentialsError"
           :error-messages="fieldErrors.email"
         />
-        <v-text-field
+        <AppTextField
           v-model="form.password"
           label="密碼"
-          variant="outlined"
           autocomplete="current-password"
           :type="showPassword ? 'text' : 'password'"
           :prepend-inner-icon="mdiLockOutline"
