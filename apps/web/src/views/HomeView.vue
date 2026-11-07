@@ -20,7 +20,7 @@ const selectedId = ref<string | null>(null)
 const listRef = useTemplateRef<HTMLDivElement>('listContainer')
 const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
 
-const { data, loading, error, setFavorite } = usePlaces(bounds)
+const { data, loading, error, setFavorite } = usePlaces(bounds, () => auth.user?.id)
 const { toggleFavorite, changeFavorite } = useFavoriteMutation(setFavorite)
 
 function handleBoundsChange(value: PlacesQuery) {
