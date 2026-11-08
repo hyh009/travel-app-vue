@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { watch } from 'vue'
 import PlaceCard from '@/components/PlaceCard.vue'
 import { useFavorites } from '@/composables/useFavorites'
 import { useFavoriteMutation } from '@/composables/useFavoriteMutation'
 import { errorMessage } from '@/utils/errorMessages'
 
-const { data, loading, error, page, setFavorite } = useFavorites()
+const { data, loading, error, page, setFavorite, totalPages } = useFavorites()
 const { toggleFavorite } = useFavoriteMutation(setFavorite)
-
-const totalPages = computed(() =>
-  data.value ? Math.ceil(data.value.total / data.value.pageSize) : 0,
-)
 
 // 換頁後回到頁面頂端,不然新的一頁會從中間開始看
 watch(page, () => window.scrollTo({ top: 0 }))

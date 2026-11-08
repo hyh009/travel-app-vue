@@ -1,4 +1,4 @@
-import { ref, shallowRef, watch, onWatcherCleanup } from 'vue'
+import { ref, shallowRef, computed, watch, onWatcherCleanup } from 'vue'
 import type { FavoritesResponse } from '@travel/shared'
 import { fetchFavorites } from '@/services/favorite.service'
 import { isAbortError } from '@/api/error'
@@ -17,6 +17,10 @@ export function useFavorites() {
       places: data.value.places.map((p) => (p.id === id ? { ...p, isFavorite } : p)),
     }
   }
+
+  const totalPages = computed(() =>
+    data.value ? Math.ceil(data.value.total / data.value.pageSize) : 0,
+  )
 
   watch(
     page,
@@ -42,5 +46,5 @@ export function useFavorites() {
     { immediate: true },
   )
 
-  return { data, loading, error, page, setFavorite }
+  return { data, loading, error, page, setFavorite, totalPages }
 }
