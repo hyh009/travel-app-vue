@@ -74,11 +74,12 @@ onMounted(async () => {
   router.replace({ query: {} })
 })
 
-// 資料換了之後:flush: 'post' 代表 DOM 已更新,不用 nextTick
+// 景點清單換了之後:flush: 'post' 代表 DOM 已更新,不用 nextTick
+// 監聽 id 組成的字串而不是 data 本身:按愛心也會換掉 data 物件,但清單沒變,不該捲動列表
 watch(
-  data,
-  (value) => {
-    if (selectedId.value && !value?.places.some((p) => p.id === selectedId.value)) {
+  () => data.value?.places.map((p) => p.id).join(','),
+  () => {
+    if (selectedId.value && !data.value?.places.some((p) => p.id === selectedId.value)) {
       selectedId.value = null
     }
     scrollToSelected()
