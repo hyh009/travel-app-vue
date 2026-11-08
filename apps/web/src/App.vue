@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { ROUTE_NAME } from '@/router/utils'
 import { useToast } from '@/composables/useToast'
-const { state: toast } = useToast()
+import { useRoute, useRouter } from 'vue-router'
 
+const { state: toast } = useToast()
+const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
+
+watch(
+  () => auth.isLoggedIn,
+  (loggedIn) => {
+    if (loggedIn || !route.meta.requiresAuth) return
+    router.replace({ name: ROUTE_NAME.LOGIN, query: { redirect: route.fullPath } })
+  },
+)
 </script>
 
 <template>
