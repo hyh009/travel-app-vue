@@ -5,9 +5,10 @@ import type { PlaceSummary } from '@travel/shared'
 interface Props {
   place: PlaceSummary
   selected?: boolean
+  showFocus?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { showFocus: true })
 
 const emit = defineEmits<{
   'focus-card': [id: string]
@@ -33,6 +34,7 @@ const emit = defineEmits<{
       </span>
       <div class="actions">
         <button
+          v-if="showFocus"
           class="focus-btn"
           type="button"
           aria-label="在地圖上顯示"
