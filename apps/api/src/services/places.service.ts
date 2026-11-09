@@ -2,7 +2,7 @@ import type { PlaceDetail, PlacesQuery, PlacesResponse } from '@travel/shared'
 import { HttpError } from '../lib/errors.js'
 import { prisma } from '../lib/prisma.js'
 
-const MAX_PLACES = 200
+const MAX_PLACES = 500
 
 // Guests have no userId; `userId: -1` can never match a real user's favorite.
 const favoriteOf = (userId: number | undefined) => ({

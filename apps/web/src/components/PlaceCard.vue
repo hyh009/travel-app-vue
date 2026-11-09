@@ -175,17 +175,9 @@ const emit = defineEmits<{
   transform: scale(1.1);
 }
 
-/* 手指點的裝置(不論螢幕多大)按鈕要夠大,約 44px 才好點 */
-@media (pointer: coarse) {
-  .heart,
-  .focus-btn {
-    width: 44px;
-    height: 44px;
-  }
-}
-
 .body {
   padding: 12px;
+  height: 100%;
 }
 
 .name {
@@ -198,5 +190,13 @@ const emit = defineEmits<{
   margin: 4px 0 0;
   font-size: 14px;
   opacity: 0.7;
+}
+
+@media (pointer: coarse) {
+  .heart,
+  .focus-btn {
+    width: 44px;
+    height: 44px;
+  }
 }
 </style>

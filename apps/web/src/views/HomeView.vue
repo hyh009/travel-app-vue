@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, useTemplateRef, watch, onMounted } from 'vue'
+import { computed, ref, useTemplateRef, watch, onMounted } from 'vue'
+import { mdiAlertCircleOutline, mdiAlertOutline } from '@mdi/js'
 import { type PlacesQuery } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
@@ -23,6 +24,25 @@ const hoveredId = ref<string | null>(null)
 
 const { data, loading, error, setFavorite } = usePlaces(bounds, () => auth.user?.id)
 const { toggleFavorite, changeFavorite } = useFavoriteMutation(setFavorite)
+
+// 地圖範圍的狀態提示,浮在地圖上:載入失敗 > 景點太多(後端有筆數上限)
+interface MapNotice {
+  type: 'warning' | 'error'
+  text: string
+}
+// 範圍內沒有景點:是列表的空狀態,不是地圖的警告。載入中、載入失敗時不算
+const isEmpty = computed(
+  () => !loading.value && !error.value && !!data.value && data.value.places.length === 0,
+)
+const mapNotice = computed<MapNotice | null>(() => {
+  if (error.value) return { type: 'error', text: '載入失敗,請稍後再試' }
+  if (loading.value || !data.value) return null
+  const { places, total } = data.value
+  if (total > places.length) {
+    return { type: 'warning', text: `顯示 ${places.length} / ${total} 個,放大地圖可發現更多景點` }
+  }
+  return null
+})
 
 function handleBoundsChange(value: PlacesQuery) {
   bounds.value = value
@@ -110,9 +130,8 @@ watch(selectedId, () => scrollToSelected(), {
     >
       <PlaceList
         :places="data?.places ?? []"
-        :total="data?.total ?? 0"
         :loading="loading"
-        :error="error"
+        :empty="isEmpty"
         :selected-id="selectedId"
         @hover-card="handleHoverIdChange"
         @focus-card="handleFocusCard"
@@ -120,6 +139,17 @@ watch(selectedId, () => scrollToSelected(), {
       />
     </div>
     <div class="map-container">
+      <div
+        v-if="mapNotice"
+        class="map-notice"
+        :class="mapNotice.type"
+      >
+        <v-icon
+          :icon="mapNotice.type === 'error' ? mdiAlertCircleOutline : mdiAlertOutline"
+          size="18"
+        />
+        {{ mapNotice.text }}
+      </div>
       <PlaceMap
         ref="placeMap"
         :places="data?.places ?? []"
@@ -145,6 +175,39 @@ watch(selectedId, () => scrollToSelected(), {
 }
 .map-container {
   flex: 1;
+  position: relative;
+}
+
+/* 浮在地圖上緣中間;pointer-events: none 讓滑鼠和手指穿過去直接操作地圖 */
+.map-notice {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Leaflet 的控制按鈕是 1000,要蓋過地圖圖層 */
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* 兩側留出縮放按鈕的位置;太長的文字(手機)會換行 */
+  width: max-content;
+  max-width: calc(100% - 112px);
+  padding: 6px 14px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 30%);
+  font-size: 13px;
+  font-weight: 500;
+  /* 換行時兩行平均分配,避免最後一行只剩一個字 */
+  text-wrap: balance;
+  pointer-events: none;
+}
+.map-notice.warning {
+  background: rgb(var(--v-theme-warning));
+  color: rgb(var(--v-theme-on-warning));
+}
+.map-notice.error {
+  background: rgb(var(--v-theme-error));
+  color: rgb(var(--v-theme-on-error));
 }
 
 @media (max-width: 1024px) {

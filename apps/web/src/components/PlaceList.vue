@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { mdiMapMarkerOffOutline } from '@mdi/js'
 import type { PlaceSummary } from '@travel/shared'
 import PlaceCard from './PlaceCard.vue'
 
 interface Props {
   places: PlaceSummary[]
-  total: number
   loading: boolean
-  error: Error | null
+  // 範圍內沒有景點(不含載入中、載入失敗)
+  empty: boolean
   selectedId: string | null
 }
 
@@ -18,30 +18,28 @@ const emit = defineEmits<{
   'toggle-favorite': [id: string]
   'hover-card': [id: string | null]
 }>()
-
-const notice = computed(() => {
-  if (props.error) return '載入失敗,請稍後再試'
-  if (props.loading) return null
-  if (props.places.length === 0) return '這個範圍內沒有景點'
-  if (props.total > props.places.length) {
-    return `此範圍共有 ${props.total} 個景點,目前顯示 ${props.places.length} 個,放大地圖可查看更多`
-  }
-  return null
-})
 </script>
 
 <template>
-  <div class="place-list">
+  <div
+    class="place-list"
+    :class="{ 'is-empty': props.empty }"
+  >
     <v-progress-linear
       v-if="props.loading"
       indeterminate
     />
-    <v-alert
-      v-if="notice"
-      :type="error ? 'error' : 'info'"
-      variant="tonal"
-      :text="notice"
-    />
+    <div
+      v-if="props.empty"
+      class="place-empty"
+    >
+      <v-icon
+        :icon="mdiMapMarkerOffOutline"
+        size="40"
+      />
+      <p class="place-empty-title">這個範圍內沒有景點</p>
+      <p>試試移動或縮小地圖</p>
+    </div>
     <PlaceCard
       v-for="place in props.places"
       :key="place.id"
@@ -63,21 +61,48 @@ const notice = computed(() => {
   gap: 12px;
 }
 
+/* 空狀態:在列表區域正中間,用安靜的灰色,不要做成色塊 */
+.place-list.is-empty {
+  min-height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.place-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+/* Vuetify 預設會給 p 一個下邊距 */
+.place-empty p {
+  margin: 0;
+}
+.place-empty-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
 @media (max-width: 1024px) {
   .place-list {
     flex-direction: row;
     width: max-content;
     height: 100%;
   }
+  /* 橫排時空狀態要撐滿整個列表寬度才置得到中間 */
+  .place-list.is-empty {
+    width: 100%;
+  }
   .place-card {
     width: 280px;
     flex-shrink: 0;
     height: 100%;
   }
-  /* 載入條、提示訊息在橫排裡也當成一格,寬度和卡片一樣,高度不要被拉滿 */
+  /* 載入條在橫排裡也當成一格,寬度和卡片一樣 */
   .place-list > :not(.place-card) {
     flex: 0 0 280px;
-    align-self: flex-start;
   }
 }
 </style>
