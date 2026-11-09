@@ -110,7 +110,11 @@ async function submit() {
 
       <div class="text-center mt-4 text-body-2">
         已經有帳號?
-        <router-link :to="{ name: ROUTE_NAME.LOGIN, query: route.query }">登入</router-link>
+        <router-link
+          class="text-blue-grey-darken-3 font-weight-medium"
+          :to="{ name: ROUTE_NAME.LOGIN, query: route.query }"
+          >登入</router-link
+        >
       </div>
     </v-card>
   </v-container>
