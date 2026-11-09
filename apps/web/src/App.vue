@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { ROUTE_NAME } from '@/router/utils'
 import { useToast } from '@/composables/useToast'
 import { useRoute, useRouter } from 'vue-router'
+import AppHeader from '@/components/AppHeader.vue'
 
 const { state: toast } = useToast()
 const route = useRoute()
@@ -21,17 +22,7 @@ watch(
 
 <template>
   <v-app>
-    <v-app-bar title="台灣景點">
-      <template v-if="auth.user">
-        <v-btn :to="{ name: ROUTE_NAME.FAVORITES }">收藏</v-btn>
-        <span class="mx-2 d-none d-sm-inline">{{ auth.user.name ?? auth.user.email }}</span>
-        <v-btn @click="auth.logout()">登出</v-btn>
-      </template>
-      <template v-else>
-        <v-btn :to="{ name: ROUTE_NAME.LOGIN }">登入</v-btn>
-        <v-btn :to="{ name: ROUTE_NAME.REGISTER }">註冊</v-btn>
-      </template>
-    </v-app-bar>
+    <AppHeader />
     <v-main>
       <RouterView />
     </v-main>
