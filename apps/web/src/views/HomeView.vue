@@ -43,10 +43,10 @@ function handleFocusCard(id: string) {
   mapRef.value?.flyTo(targetPlace.lat, targetPlace.lng)
 }
 
-function scrollToSelected(options?: ScrollIntoViewOptions) {
+function scrollToSelected() {
   const id = selectedId.value
   const el = id ? listRef.value?.querySelector(`[data-id="${CSS.escape(id)}"]`) : null
-  if (el) el.scrollIntoView(options)
+  if (el) el.scrollIntoView({ inline: 'center' })
   else listRef.value?.scrollTo({ top: 0 })
 }
 
@@ -64,6 +64,16 @@ function handleToggleFavorite(attractionId: string) {
   const targetPlace = data.value.places.find((p) => p.id === attractionId)
   if (!targetPlace) return
   toggleFavorite(targetPlace)
+}
+
+function handleListWheel(e: WheelEvent) {
+  const el = listRef.value
+  if (!el) return
+  if (el.scrollWidth <= el.clientWidth) return
+  if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+
+  e.preventDefault()
+  el.scrollLeft += e.deltaY
 }
 
 onMounted(async () => {
@@ -96,6 +106,7 @@ watch(selectedId, () => scrollToSelected(), {
     <div
       ref="listContainer"
       class="list-container"
+      @wheel="handleListWheel"
     >
       <PlaceList
         :places="data?.places ?? []"
@@ -134,5 +145,21 @@ watch(selectedId, () => scrollToSelected(), {
 }
 .map-container {
   flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .main {
+    flex-direction: column-reverse;
+  }
+  .list-container {
+    width: 100%;
+    height: 260px;
+    overflow-y: hidden;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .list-container::-webkit-scrollbar {
+    display: none;
+  }
 }
 </style>

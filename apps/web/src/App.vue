@@ -24,7 +24,7 @@ watch(
     <v-app-bar title="台灣景點">
       <template v-if="auth.user">
         <v-btn :to="{ name: ROUTE_NAME.FAVORITES }">收藏</v-btn>
-        <span class="mx-2">{{ auth.user.name ?? auth.user.email }}</span>
+        <span class="mx-2 d-none d-sm-inline">{{ auth.user.name ?? auth.user.email }}</span>
         <v-btn @click="auth.logout()">登出</v-btn>
       </template>
       <template v-else>

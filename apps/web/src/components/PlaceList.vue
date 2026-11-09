@@ -31,7 +31,7 @@ const notice = computed(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column ga-3">
+  <div class="place-list">
     <v-progress-linear
       v-if="props.loading"
       indeterminate
@@ -45,6 +45,7 @@ const notice = computed(() => {
     <PlaceCard
       v-for="place in props.places"
       :key="place.id"
+      class="place-card"
       :place="place"
       :selected="place.id === props.selectedId"
       :data-id="place.id"
@@ -54,3 +55,29 @@ const notice = computed(() => {
     />
   </div>
 </template>
+
+<style scoped>
+.place-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 1024px) {
+  .place-list {
+    flex-direction: row;
+    width: max-content;
+    height: 100%;
+  }
+  .place-card {
+    width: 280px;
+    flex-shrink: 0;
+    height: 100%;
+  }
+  /* 載入條、提示訊息在橫排裡也當成一格,寬度和卡片一樣,高度不要被拉滿 */
+  .place-list > :not(.place-card) {
+    flex: 0 0 280px;
+    align-self: flex-start;
+  }
+}
+</style>

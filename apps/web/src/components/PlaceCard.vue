@@ -89,6 +89,7 @@ const emit = defineEmits<{
     outline-color 0.15s,
     transform 0.15s,
     box-shadow 0.15s;
+  height: 100%;
 }
 
 .card.selected {
@@ -172,6 +173,15 @@ const emit = defineEmits<{
 .focus-btn:hover {
   background: white;
   transform: scale(1.1);
+}
+
+/* 手指點的裝置(不論螢幕多大)按鈕要夠大,約 44px 才好點 */
+@media (pointer: coarse) {
+  .heart,
+  .focus-btn {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 .body {
