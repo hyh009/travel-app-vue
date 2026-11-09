@@ -1,0 +1,76 @@
+# 正式環境:docker compose -f docker-compose.prod.yml up -d --build
+# 只有 caddy 對外開 80/443;資料庫和 Redis 只在內部網路裡,外面連不到。
+# 網路分兩段:frontend(caddy ↔ app)、backend(app ↔ db、redis)。
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: travel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?請在 .env 設定 POSTGRES_PASSWORD}
+      POSTGRES_DB: travel_app
+    networks: [backend]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U travel -d travel_app']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    networks: [backend]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    networks: [frontend, backend]
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      WEB_ORIGIN: https://${DOMAIN}
+      DATABASE_URL: postgresql://travel:${POSTGRES_PASSWORD}@db:5432/travel_app
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?請在 .env 設定 JWT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    networks: [frontend]
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMAIN: ${DOMAIN:?請在 .env 設定 DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+networks:
+  frontend:
+  backend:
+    internal: true # 這個網路連不出去外網
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:

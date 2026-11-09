@@ -1,0 +1,8 @@
+# 自動向 Let's Encrypt 申請並續期 HTTPS 憑證
+{$DOMAIN} {
+	encode gzip zstd
+
+	header X-Robots-Tag "noindex, nofollow"
+
+	reverse_proxy app:3000
+}
