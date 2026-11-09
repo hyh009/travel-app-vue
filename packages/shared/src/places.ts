@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const MAX_SPAN_DEGREES = 0.5
+export const MAX_SPAN_DEGREES = 0.5
 
 const DECIMAL = /^-?\d+(\.\d+)?$/
 

@@ -1,7 +1,21 @@
 import type L from 'leaflet'
+import { MAX_SPAN_DEGREES } from '@travel/shared'
 
 // 小數 5 位約 1 公尺
 export const round = (n: number) => Math.round(n * 1e5) / 1e5
+
+const TILE_SIZE = 256
+
+// 讓整個畫面涵蓋的範圍(寬和高)都不超過後端上限 MAX_SPAN_DEGREES 的最小縮放等級。
+// 縮放等級 z 時,世界寬 256 × 2^z 像素 = 360°,所以每個像素 360 / (256 × 2^z) 度;
+// 解「像素 × 每像素度數 ≤ 上限」就得到 z。容器越大,同一個縮放等級涵蓋的範圍越大,下限就越高。
+export function minZoomFor(width: number, height: number, lat: number): number {
+  const zoomFor = (pixels: number) => Math.log2((pixels * 360) / (TILE_SIZE * MAX_SPAN_DEGREES))
+  // 緯度方向每像素的度數比經度小 cos(緯度) 倍
+  const latPixels = height * Math.cos((lat * Math.PI) / 180)
+  // 容器還沒有大小(例如被隱藏)時 log2(0) 是 -Infinity,這裡退回 0
+  return Math.max(0, Math.ceil(Math.max(zoomFor(width), zoomFor(latPixels))))
+}
 
 export function markerStyle(selected: boolean): L.CircleMarkerOptions {
   return selected

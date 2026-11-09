@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { PlacesQuery, PlaceSummary } from '@travel/shared'
-import { round, markerStyle, placeTooltip } from '@/utils/map'
+import { round, markerStyle, placeTooltip, minZoomFor } from '@/utils/map'
 
 const DEFAULT_MAP_CENTER: L.LatLngTuple = [25.04, 121.55]
 const DEFAULT_ZOOM_VALUE = 14
@@ -28,6 +28,7 @@ const container = useTemplateRef<HTMLDivElement>('mapContainer')
 let map: L.Map | null = null
 let layer: L.LayerGroup | null = null
 const markers = new Map<string, L.CircleMarker>()
+let resizeObserver: ResizeObserver | null = null
 
 // ── Function ──
 function flyTo(lat: number, lng: number) {
@@ -73,6 +74,13 @@ function syncMarkers() {
   }
 }
 
+function updateMinZoom() {
+  if (!map) return
+  map.invalidateSize()
+  const { x, y } = map.getSize()
+  map.setMinZoom(minZoomFor(x, y, map.getCenter().lat))
+}
+
 // ── 生命週期 ──
 onMounted(() => {
   if (!container.value) return
@@ -88,9 +96,14 @@ onMounted(() => {
   map.on('moveend', emitBounds)
   emitBounds()
   syncMarkers()
+
+  resizeObserver = new ResizeObserver(updateMinZoom)
+  resizeObserver.observe(container.value)
 })
 
 onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
   map?.remove()
   map = null
   layer = null
