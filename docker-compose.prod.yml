@@ -1,10 +1,18 @@
 # 正式環境:docker compose -f docker-compose.prod.yml up -d --build
 # 只有 caddy 對外開 80/443;資料庫和 Redis 只在內部網路裡,外面連不到。
 # 網路分兩段:frontend(caddy ↔ app)、backend(app ↔ db、redis)。
+# Docker 預設不會刪舊 log,會一直長大直到硬碟寫滿。每個容器最多只留 3 個 10 MB 的檔案
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
 services:
   db:
     image: postgres:17
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: travel
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?請在 .env 設定 POSTGRES_PASSWORD}
@@ -21,6 +29,7 @@ services:
   redis:
     image: redis:7
     restart: unless-stopped
+    logging: *default-logging
     command: ['redis-server', '--appendonly', 'yes']
     networks: [backend]
     volumes:
@@ -34,6 +43,7 @@ services:
   app:
     build: .
     restart: unless-stopped
+    logging: *default-logging
     networks: [frontend, backend]
     environment:
       NODE_ENV: production
@@ -51,6 +61,7 @@ services:
   caddy:
     image: caddy:2
     restart: unless-stopped
+    logging: *default-logging
     networks: [frontend]
     ports:
       - '80:80'
