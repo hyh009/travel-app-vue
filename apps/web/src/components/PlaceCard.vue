@@ -206,9 +206,11 @@ const emit = defineEmits<{
   color: #e53935;
 }
 
-/* 卡片較窄(手機橫向捲動):照片放上面,文字在下面 */
+/* 卡片較窄(手機橫向捲動):照片放上面、文字在下面,
+   標籤和按鈕改成疊在照片上,不佔高度,列表才能維持固定高度 */
 @container (max-width: 330px) {
   .inner {
+    position: relative;
     flex-direction: column;
     gap: 10px;
   }
@@ -217,6 +219,19 @@ const emit = defineEmits<{
     height: 120px;
     /* 變寬扁後上下會被裁,偏上一點才不會切到圖釘的頂端 */
     object-position: center 30%;
+  }
+  .meta {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    margin: 0;
+    padding: 0;
+    align-items: flex-start;
+  }
+  /* 在照片上要有底色才看得清楚 */
+  .icon-btn {
+    background: rgba(255, 255, 255, 0.85);
   }
 }
 
