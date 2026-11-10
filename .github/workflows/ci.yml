@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # 每次 push 和 PR 都跑:型別檢查、lint、格式、建置
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: travel
+          POSTGRES_PASSWORD: travel
+          POSTGRES_DB: travel_app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U travel -d travel_app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # 和 Dockerfile 用同一個 pnpm 版本
+      - run: npm install -g pnpm@11.28.10
+
+      - run: pnpm install --frozen-lockfile
+
+      # Prisma client 不在 git 裡,型別檢查前要先產生
+      - run: pnpm --filter api db:generate
+
+      - name: 型別檢查
+        run: |
+          pnpm --filter @travel/shared typecheck
+          pnpm --filter api exec tsc --noEmit
+
+      - name: Lint
+        run: |
+          pnpm --filter api exec eslint .
+          pnpm --filter web exec oxlint .
+          pnpm --filter web exec eslint .
+
+      - name: 格式
+        run: pnpm --filter web exec prettier --check src
+
+      - name: 前端單元測試
+        run: pnpm --filter web test
+
+      - name: 後端 API 測試
+        run: pnpm --filter api test
+
+      # build 內含 vue-tsc 的型別檢查
+      - name: 前端建置
+        run: pnpm --filter web build
