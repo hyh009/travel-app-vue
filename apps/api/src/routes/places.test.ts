@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { app } from '../app.js'
+import { prisma } from '../lib/prisma.js'
 import { credentials, resetDb } from '../test/helpers.js'
 
 beforeEach(resetDb)
@@ -64,5 +65,217 @@ describe('GET /api/places/:id', () => {
     const res = await request(app).get('/api/places/nope')
     expect(res.status).toBe(404)
     expect(res.body.error.code).toBe('PLACE_NOT_FOUND')
+  })
+})
+
+describe('GET /api/places/search', () => {
+  const ids = (res: { body: { places: { id: string }[] } }) => res.body.places.map((p) => p.id)
+
+  it('用名稱搜尋', async () => {
+    const res = await request(app)
+      .get(`/api/places/search?q=${encodeURIComponent('日月')}`)
+      .expect(200)
+    expect(ids(res)).toEqual(['a2'])
+  })
+
+  it('用縣市或鄉鎮搜尋(測試資料全部是「測試市」)', async () => {
+    const byCity = await request(app).get(`/api/places/search?q=${encodeURIComponent('測試市')}`)
+    const byTown = await request(app).get(`/api/places/search?q=${encodeURIComponent('測試區')}`)
+    expect(ids(byCity)).toHaveLength(3)
+    expect(ids(byTown)).toHaveLength(3)
+  })
+
+  it('名稱符合的排在只有縣市符合的前面', async () => {
+    await prisma.attraction.create({
+      data: {
+        id: 'z',
+        name: '某處',
+        description: '',
+        city: '阿里山市',
+        town: 'x',
+        lat: 23,
+        lng: 120,
+        isFree: true,
+      },
+    })
+    const res = await request(app).get(`/api/places/search?q=${encodeURIComponent('阿里山')}`)
+    expect(ids(res)).toEqual(['a1', 'z'])
+  })
+
+  it('英文不分大小寫', async () => {
+    await prisma.attraction.create({
+      data: {
+        id: 'e',
+        name: 'Sun Moon Lake',
+        description: '',
+        city: 'x',
+        town: 'x',
+        lat: 23,
+        lng: 120,
+        isFree: true,
+      },
+    })
+    const res = await request(app).get('/api/places/search?q=sun%20MOON')
+    expect(ids(res)).toEqual(['e'])
+  })
+
+  it('最多回 20 筆', async () => {
+    await prisma.attraction.createMany({
+      data: Array.from({ length: 25 }, (_, i) => ({
+        id: `m${i}`,
+        name: `夜市${i}`,
+        description: '',
+        city: 'x',
+        town: 'x',
+        lat: 23,
+        lng: 120,
+        isFree: true,
+      })),
+    })
+    const res = await request(app).get(`/api/places/search?q=${encodeURIComponent('夜市')}`)
+    expect(res.body.places).toHaveLength(20)
+  })
+
+  it('沒有符合的回空陣列', async () => {
+    const res = await request(app).get('/api/places/search?q=zzzzzz').expect(200)
+    expect(res.body.places).toEqual([])
+  })
+
+  it('關鍵字 % 與 _ 只當一般字元,不會變成萬用字元', async () => {
+    const res = await request(app).get('/api/places/search?q=%25').expect(200)
+    expect(res.body.places).toEqual([])
+  })
+
+  it.each([
+    ['沒有 q', ''],
+    ['空白', '?q=%20%20'],
+    ['超過 50 字', `?q=${'a'.repeat(51)}`],
+  ])('%s 回 400', async (_n, qs) => {
+    await request(app).get(`/api/places/search${qs}`).expect(400)
+  })
+
+  it('登入後 isFavorite 正確', async () => {
+    const agent = request.agent(app)
+    await agent.post('/api/auth/register').send(credentials).expect(201)
+    await agent.put('/api/favorites/a1').expect(204)
+    const res = await agent.get(`/api/places/search?q=${encodeURIComponent('阿里山')}`)
+    expect(res.body.places[0]).toMatchObject({ id: 'a1', isFavorite: true })
+  })
+})
+
+describe('GET /api/places/search:台/臺與多關鍵字', () => {
+  const search = (q: string) =>
+    request(app)
+      .get(`/api/places/search?q=${encodeURIComponent(q)}`)
+      .expect(200)
+
+  async function seedTaiwan() {
+    const base = { description: '', isFree: true }
+    await prisma.attraction.createMany({
+      data: [
+        { ...base, id: 't1', name: '故宮', city: '臺北市', town: '士林區', lat: 25.1, lng: 121.5 },
+        {
+          ...base,
+          id: 't2',
+          name: '中正紀念堂',
+          city: '臺北市',
+          town: '中正區',
+          lat: 25.04,
+          lng: 121.52,
+        },
+        {
+          ...base,
+          id: 't3',
+          name: '台北101',
+          city: '臺北市',
+          town: '信義區',
+          lat: 25.03,
+          lng: 121.56,
+        },
+        {
+          ...base,
+          id: 'k1',
+          name: '廟口',
+          city: '基隆市',
+          town: '中正區',
+          lat: 25.13,
+          lng: 121.74,
+        },
+        {
+          ...base,
+          id: 'h1',
+          name: '太魯閣',
+          city: '花蓮縣',
+          town: '秀林鄉',
+          lat: 24.15,
+          lng: 121.6,
+        },
+      ],
+    })
+  }
+
+  it('打「台北」找得到資料裡的「臺北市」', async () => {
+    await seedTaiwan()
+    const res = await search('台北')
+    expect(res.body.places.map((p: { id: string }) => p.id).sort()).toEqual(['t1', 't2', 't3'])
+  })
+
+  it('多個關鍵字要全部符合', async () => {
+    await seedTaiwan()
+    const res = await search('臺北 故宮')
+    expect(res.body.places.map((p: { id: string }) => p.id)).toEqual(['t1'])
+  })
+
+  it('搜縣市:回一個縣市地區,數量與外框正確,不夾帶該縣市的鄉鎮', async () => {
+    await seedTaiwan()
+    const { areas } = (await search('台北市')).body
+    expect(areas).toEqual([
+      {
+        city: '臺北市',
+        town: null,
+        count: 3,
+        bounds: { swLat: 25.03, swLng: 121.5, neLat: 25.1, neLng: 121.56 },
+      },
+    ])
+  })
+
+  it('搜鄉鎮:同名鄉鎮(中正區)要連縣市一起回,分開成兩個地區', async () => {
+    await seedTaiwan()
+    const { areas } = (await search('中正區')).body
+    expect(areas.map((a: { city: string; town: string }) => `${a.city}${a.town}`).sort()).toEqual([
+      '基隆市中正區',
+      '臺北市中正區',
+    ])
+  })
+
+  it('縣市加鄉鎮:只回對應的那個鄉鎮', async () => {
+    await seedTaiwan()
+    const { areas } = (await search('台北 中正')).body
+    expect(areas).toHaveLength(1)
+    expect(areas[0]).toMatchObject({ city: '臺北市', town: '中正區', count: 1 })
+  })
+
+  it('搜景點名稱:沒有地區,只有景點', async () => {
+    await seedTaiwan()
+    const res = await search('太魯閣')
+    expect(res.body.areas).toEqual([])
+    expect(res.body.places).toHaveLength(1)
+  })
+
+  it('縣市地區排在鄉鎮地區前面', async () => {
+    await prisma.attraction.create({
+      data: {
+        id: 'x',
+        name: 'x',
+        description: '',
+        city: '新北市',
+        town: '新北區',
+        lat: 25,
+        lng: 121,
+        isFree: true,
+      },
+    })
+    const { areas } = (await search('新北')).body
+    expect(areas.map((a: { town: string | null }) => a.town)).toEqual([null, '新北區'])
   })
 })

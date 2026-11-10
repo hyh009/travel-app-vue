@@ -27,6 +27,14 @@ export const placesQuerySchema = z
 
 export type PlacesQuery = z.output<typeof placesQuerySchema>
 
+export const MAX_SEARCH_RESULTS = 20
+
+export const searchQuerySchema = z.object({
+  q: z.string().trim().min(1).max(50),
+})
+
+export type SearchQuery = z.output<typeof searchQuerySchema>
+
 export interface PlaceSummary {
   id: string
   name: string
@@ -52,4 +60,19 @@ export interface PlacesResponse {
 
 export interface PlaceDetailResponse {
   place: PlaceDetail
+}
+
+export const MAX_SEARCH_AREAS = 5
+
+// 搜尋到的「地區」:整個縣市(town 為 null)或某個鄉鎮。bounds 是該地區所有景點的外框
+export interface SearchArea {
+  city: string
+  town: string | null
+  count: number
+  bounds: { swLat: number; swLng: number; neLat: number; neLng: number }
+}
+
+export interface SearchResponse {
+  areas: SearchArea[]
+  places: PlaceSummary[]
 }

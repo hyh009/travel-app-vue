@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { PlacesQuery, PlaceSummary } from '@travel/shared'
+import type { PlacesQuery, PlaceSummary, SearchArea } from '@travel/shared'
 import { round, markerStyle, placeTooltip, minZoomFor } from '@/utils/map'
 
 const DEFAULT_MAP_CENTER: L.LatLngTuple = [25.04, 121.55]
@@ -20,7 +20,7 @@ const emit = defineEmits<{
   'bounds-change': [bounds: PlacesQuery]
   select: [id: string]
 }>()
-defineExpose({ flyTo })
+defineExpose({ flyTo, fitBounds })
 
 // ── 內部狀態 ──
 // Leaflet 實例不用 ref:避免被 Vue 包成 Proxy
@@ -34,6 +34,19 @@ let resizeObserver: ResizeObserver | null = null
 function flyTo(lat: number, lng: number) {
   if (!map) return
   map.flyTo([lat, lng], Math.max(map.getZoom(), 15))
+}
+
+// 把一個地區的外框放進畫面。縮放不會低於最小縮放(大縣市會停在中心附近);
+// maxZoom 避免只有一個景點的地區(外框是一個點)縮到最近
+function fitBounds(b: SearchArea['bounds']) {
+  if (!map) return
+  map.fitBounds(
+    [
+      [b.swLat, b.swLng],
+      [b.neLat, b.neLng],
+    ],
+    { maxZoom: 15 },
+  )
 }
 
 function emitBounds() {
