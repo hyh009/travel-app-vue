@@ -25,13 +25,13 @@ const emit = defineEmits<{
     @mouseleave="emit('hover-card', null)"
   >
     <div class="inner">
-      <!-- 還沒有每個景點自己的照片,先全部用同一張(Unsplash,Yenpo Chen) -->
+      <!-- 還沒有每個景點自己的照片,先全部用同一張預設圖 -->
       <img
         class="thumb"
-        src="/place-cover.jpg"
+        src="/place-cover.webp"
         alt=""
         loading="lazy"
-        width="480"
+        width="720"
         height="480"
       />
 
@@ -121,8 +121,9 @@ const emit = defineEmits<{
 
 .thumb {
   flex: none;
-  width: 104px;
-  height: 104px;
+  /* 預設圖是 3:2,照比例顯示才不會被裁掉 */
+  width: 144px;
+  height: 96px;
   object-fit: cover;
   border-radius: 12px;
 }
@@ -214,6 +215,8 @@ const emit = defineEmits<{
   .thumb {
     width: 100%;
     height: 120px;
+    /* 變寬扁後上下會被裁,偏上一點才不會切到圖釘的頂端 */
+    object-position: center 30%;
   }
 }
 
