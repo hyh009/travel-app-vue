@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
-    "db:seed": "tsx src/scripts/seed-attractions.ts"
+    "db:seed": "tsx src/scripts/seed-attractions.ts",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -36,11 +37,14 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
     "eslint": "^10.14.0",
     "globals": "^17.14.0",
     "prisma": "7.10.1",
+    "supertest": "^7.3.2",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.1"
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.1.0"
   }
 }
