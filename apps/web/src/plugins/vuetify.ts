@@ -14,8 +14,9 @@ export default createVuetify({
     themes: {
       light: {
         colors: {
-          primary: '#F2C14E',
-          secondary: '#E9A23B',
+          // 深綠:導覽列選取、卡片選取框、按鈕。地圖標記的黃色是另外寫在 utils/map.ts 的
+          primary: '#2E6F5E',
+          secondary: '#3E8E7E',
           // info 預設是亮藍色,改成和導覽列、地圖標記同一組的深藍灰
           info: '#37474F',
         },
