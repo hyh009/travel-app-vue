@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch, onMounted } from 'vue'
 import { mdiAlertCircleOutline, mdiAlertOutline } from '@mdi/js'
-import { type PlacesQuery } from '@travel/shared'
+import type { PlacesQuery, PlaceSummary, SearchArea } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
+import SearchBox from '@/components/SearchBox.vue'
 import { useFavoriteMutation } from '@/composables/useFavoriteMutation'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
@@ -61,6 +62,18 @@ function handleFocusCard(id: string) {
   const targetPlace = data.value?.places.find((p) => p.id === id)
   if (!targetPlace) return
   mapRef.value?.flyTo(targetPlace.lat, targetPlace.lng)
+}
+
+// 搜尋選到景點:用搜尋結果自己的座標飛過去(它通常還不在目前載入的清單裡)
+function handleSearchPlace(place: PlaceSummary) {
+  selectedId.value = place.id
+  mapRef.value?.flyTo(place.lat, place.lng)
+}
+
+// 搜尋選到地區:把地區外框放進畫面,不選任何景點
+function handleSearchArea(area: SearchArea) {
+  selectedId.value = null
+  mapRef.value?.fitBounds(area.bounds)
 }
 
 function scrollToSelected() {
@@ -139,6 +152,11 @@ watch(selectedId, () => scrollToSelected(), {
       />
     </div>
     <div class="map-container">
+      <SearchBox
+        class="map-search"
+        @select-place="handleSearchPlace"
+        @select-area="handleSearchArea"
+      />
       <div
         v-if="mapNotice"
         class="map-notice"
@@ -178,10 +196,19 @@ watch(selectedId, () => scrollToSelected(), {
   position: relative;
 }
 
-/* 浮在地圖上緣中間;pointer-events: none 讓滑鼠和手指穿過去直接操作地圖 */
-.map-notice {
+/* 浮在地圖上緣:左邊留出 Leaflet 縮放按鈕的位置 */
+.map-search {
   position: absolute;
   top: 12px;
+  left: 64px;
+  width: min(420px, calc(100% - 76px));
+  z-index: 1001;
+}
+
+/* 浮在搜尋框下面、地圖上緣中間;pointer-events: none 讓滑鼠和手指穿過去直接操作地圖 */
+.map-notice {
+  position: absolute;
+  top: 64px;
   left: 50%;
   transform: translateX(-50%);
   /* Leaflet 的控制按鈕是 1000,要蓋過地圖圖層 */
