@@ -1,6 +1,6 @@
 # 台灣景點地圖
 
-在地圖上瀏覽台灣景點、收藏喜歡的地點。作品集專案,同時也是我學習 Vue 的練習(之前主要寫 React)。
+在地圖上瀏覽台灣景點、收藏喜歡的地點。
 
 **線上展示:** https://54-66-110-220.sslip.io
 
@@ -22,6 +22,12 @@
 | 驗證 | JWT access token 放在 httpOnly cookie;refresh token 雜湊後存資料庫、每次使用就換新(rotation);密碼用 bcrypt |
 | 部署 | Docker Compose、Caddy(自動 HTTPS)、AWS Lightsail |
 | 工具 | pnpm workspace、TypeScript、ESLint、Prettier |
+
+## 資料
+
+景點資料來自交通部觀光署的開放資料[「景點 - 觀光資訊資料庫」](https://data.gov.tw/dataset/7777)(下載檔:[Attraction-json.zip](https://media.taiwan.net.tw/XMLReleaseAll_public/v2.0/Zh_tw/Attraction-json.zip),依[政府資料開放授權條款第 1 版](https://data.gov.tw/license)使用),約 6,100 筆,放在 `apps/api/data/attractions.json`,用 `pnpm --filter api db:seed` 匯入資料庫。地圖底圖是 [OpenStreetMap](https://www.openstreetmap.org/copyright)。
+
+目前只使用名稱、簡介、位置、是否免費與官方網址;來源資料還有類別、圖片、開放時間等欄位,尚未匯入。來源資料集本身並未收錄所有知名景點(例如國立海洋生物博物館)。
 
 ## 專案結構
 
