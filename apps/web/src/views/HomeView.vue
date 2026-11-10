@@ -243,7 +243,8 @@ watch(selectedId, () => scrollToSelected(), {
   }
   .list-container {
     width: 100%;
-    height: 260px;
+    /* 高度由卡片內容決定,地圖佔剩下的空間 */
+    flex: none;
     overflow-y: hidden;
     overflow-x: auto;
     scrollbar-width: none;
