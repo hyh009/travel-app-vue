@@ -243,6 +243,35 @@ describe('GET /api/places/search:台/臺與多關鍵字', () => {
     expect(res.body.places).toHaveLength(1)
   })
 
+  it.each(['台北市中正區', '臺北市中正區', '台北中正區'])(
+    '縣市和鄉鎮連在一起(%s):只回臺北市中正區,不混入基隆市的中正區',
+    async (q) => {
+      await seedTaiwan()
+      const res = await search(q)
+      expect(
+        res.body.areas.map((a: { city: string; town: string }) => `${a.city}${a.town}`),
+      ).toEqual(['臺北市中正區'])
+      expect(ids(res)).toEqual(['t2'])
+    },
+  )
+
+  it('名稱開頭像縣市(新北投溫泉)不會被拆開,仍找得到', async () => {
+    await prisma.attraction.create({
+      data: {
+        id: 'hs',
+        name: '新北投溫泉',
+        description: '',
+        city: '臺北市',
+        town: '北投區',
+        lat: 25.13,
+        lng: 121.5,
+        isFree: true,
+      },
+    })
+    const res = await search('新北投溫泉')
+    expect(ids(res)).toEqual(['hs'])
+  })
+
   it('縣市地區排在鄉鎮地區前面', async () => {
     await prisma.attraction.create({
       data: {
