@@ -25,6 +25,9 @@ export async function listInBounds(
   const where = {
     lat: { gte: query.swLat, lte: query.neLat },
     lng: { gte: query.swLng, lte: query.neLng },
+    // Prisma ignores `undefined`, so omitting city/town means "no filter"
+    city: query.city,
+    town: query.town,
   }
 
   const [rows, total] = await Promise.all([

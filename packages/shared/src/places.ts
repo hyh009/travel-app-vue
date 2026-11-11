@@ -17,6 +17,11 @@ export const placesQuerySchema = z
     swLng: coord(180),
     neLat: coord(90),
     neLng: coord(180),
+    city: z.string().trim().min(1).max(20).optional(),
+    town: z.string().trim().min(1).max(20).optional(),
+  })
+  .refine((q) => q.town === undefined || q.city !== undefined, {
+    message: 'town requires city',
   })
   .refine((q) => q.neLat > q.swLat && q.neLng > q.swLng, {
     message: 'Northeast corner must be greater than southwest corner',
