@@ -25,6 +25,9 @@ export async function listInBounds(
   const where = {
     lat: { gte: query.swLat, lte: query.neLat },
     lng: { gte: query.swLng, lte: query.neLng },
+    // Prisma ignores `undefined`, so omitting city/town means "no filter"
+    city: query.city,
+    town: query.town,
   }
 
   const [rows, total] = await Promise.all([
@@ -116,6 +119,12 @@ async function searchPlaces(terms: string[], userId: number | undefined) {
   )
 }
 
+// 一個地區的統計。外框(sw/ne)是「該地區所有景點座標的最小/最大值」,
+// 不是行政區邊界:資料裡沒有邊界,所以外框只是圈住景點的最小矩形。限制:
+// - 景點偏在地區一側時,外框的中心也會偏向那一側
+// - 只有一個景點時,外框縮成一個點
+// - 含離島的縣市(澎湖、金門、連江)外框會非常大
+// - 大縣市(臺東縣等)外框會超過 MAX_SPAN_DEGREES,地圖放不進去,前端只能停在中心附近
 interface AreaStats {
   count: number
   swLat: number
@@ -124,6 +133,8 @@ interface AreaStats {
   neLng: number
 }
 
+// 縣市沒有自己的資料列,要把底下各鄉鎮的統計合併:
+// 筆數相加,外框取所有鄉鎮最小值中的最小、最大值中的最大
 function mergeStats(a: AreaStats | undefined, b: AreaStats): AreaStats {
   if (!a) return b
   return {
@@ -147,6 +158,7 @@ const toArea = (city: string, town: string | null, s: AreaStats): SearchArea => 
 // - 鄉鎮地區:每個詞符合縣市或鄉鎮,且至少一個詞符合鄉鎮(「臺北 中正」→ 臺北市中正區)
 // 鄉鎮名稱會重複(中正區在臺北市和基隆市),所以一定要連縣市一起看
 async function searchAreas(terms: string[]): Promise<SearchArea[]> {
+  // 資料庫依「縣市+鄉鎮」分組,每組直接算出筆數與座標的最小/最大值(外框就是這樣來的)
   const groups = await prisma.attraction.groupBy({
     by: ['city', 'town'],
     where: termsWhere(terms, ['city', 'town']),

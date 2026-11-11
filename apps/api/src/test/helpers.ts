@@ -21,4 +21,50 @@ export async function resetDb() {
   })
 }
 
+// 多個縣市的測試資料;注意「中正區」同時在臺北市與基隆市
+export async function seedTaiwan() {
+  const base = { description: '', isFree: true }
+  await prisma.attraction.createMany({
+    data: [
+      { ...base, id: 't1', name: '故宮', city: '臺北市', town: '士林區', lat: 25.1, lng: 121.5 },
+      {
+        ...base,
+        id: 't2',
+        name: '中正紀念堂',
+        city: '臺北市',
+        town: '中正區',
+        lat: 25.04,
+        lng: 121.52,
+      },
+      {
+        ...base,
+        id: 't3',
+        name: '台北101',
+        city: '臺北市',
+        town: '信義區',
+        lat: 25.03,
+        lng: 121.56,
+      },
+      {
+        ...base,
+        id: 'k1',
+        name: '廟口',
+        city: '基隆市',
+        town: '中正區',
+        lat: 25.13,
+        lng: 121.74,
+      },
+      {
+        ...base,
+        id: 'h1',
+        name: '太魯閣',
+        city: '花蓮縣',
+        town: '秀林鄉',
+        lat: 24.15,
+        lng: 121.6,
+      },
+    ],
+  })
+}
+
 export const credentials = { email: 'a@example.com', password: 'password123' }

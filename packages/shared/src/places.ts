@@ -17,6 +17,11 @@ export const placesQuerySchema = z
     swLng: coord(180),
     neLat: coord(90),
     neLng: coord(180),
+    city: z.string().trim().min(1).max(20).optional(),
+    town: z.string().trim().min(1).max(20).optional(),
+  })
+  .refine((q) => q.town === undefined || q.city !== undefined, {
+    message: 'town requires city',
   })
   .refine((q) => q.neLat > q.swLat && q.neLng > q.swLng, {
     message: 'Northeast corner must be greater than southwest corner',
@@ -26,6 +31,9 @@ export const placesQuerySchema = z
   })
 
 export type PlacesQuery = z.output<typeof placesQuerySchema>
+
+// 地圖的畫面範圍:只有四個座標,不含地區篩選
+export type Viewport = Pick<PlacesQuery, 'swLat' | 'swLng' | 'neLat' | 'neLng'>
 
 export const MAX_SEARCH_RESULTS = 20
 
@@ -64,7 +72,9 @@ export interface PlaceDetailResponse {
 
 export const MAX_SEARCH_AREAS = 5
 
-// 搜尋到的「地區」:整個縣市(town 為 null)或某個鄉鎮。bounds 是該地區所有景點的外框
+// 搜尋到的「地區」:整個縣市(town 為 null)或某個鄉鎮。
+// bounds 是該地區所有景點座標的最小外框,不是行政區邊界;大縣市的外框可能超過
+// MAX_SPAN_DEGREES(0.5 度),前端地圖無法縮小到放得下,只能分塊瀏覽
 export interface SearchArea {
   city: string
   town: string | null
