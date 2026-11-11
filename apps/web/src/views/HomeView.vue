@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch, onMounted } from 'vue'
-import { mdiAlertCircleOutline, mdiAlertOutline } from '@mdi/js'
+import { mdiAlertCircleOutline, mdiAlertOutline, mdiCrosshairsGps } from '@mdi/js'
 import type { PlaceSummary, SearchArea, Viewport } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
@@ -20,6 +20,10 @@ const toast = useToast()
 // 畫面範圍由地圖決定,每次拖曳都會整個換掉;地區篩選由使用者操作決定。兩者分開存
 const bounds = ref<Viewport | null>(null)
 const areaFilter = ref<SearchArea | null>(null)
+// 標籤和空狀態都要顯示的地區名稱,例如「新北市永和區」
+const areaLabel = computed(
+  () => areaFilter.value && `${areaFilter.value.city}${areaFilter.value.town ?? ''}`,
+)
 const selectedId = ref<string | null>(null)
 const listRef = useTemplateRef<HTMLDivElement>('listContainer')
 const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
@@ -84,11 +88,16 @@ function handleSearchPlace(place: PlaceSummary) {
   mapRef.value?.flyTo(place.lat, place.lng)
 }
 
+function focusArea() {
+  if (!areaFilter.value) return
+  mapRef.value?.fitBounds(areaFilter.value.bounds)
+}
+
 // 搜尋選到地區:把地區外框放進畫面,不選任何景點
 function handleSearchArea(area: SearchArea) {
   selectedId.value = null
   areaFilter.value = area
-  mapRef.value?.fitBounds(area.bounds)
+  focusArea()
 }
 
 function scrollToSelected() {
@@ -160,6 +169,7 @@ watch(selectedId, () => scrollToSelected(), {
         :places="data?.places ?? []"
         :loading="loading"
         :empty="isEmpty"
+        :area-label="areaLabel"
         :selected-id="selectedId"
         @hover-card="handleHoverIdChange"
         @focus-card="handleFocusCard"
@@ -179,9 +189,11 @@ watch(selectedId, () => scrollToSelected(), {
         variant="flat"
         closable
         close-label="取消地區篩選"
+        :prepend-icon="mdiCrosshairsGps"
+        @click="focusArea"
         @click:close="clearAreaFilter"
       >
-        只顯示:{{ areaFilter.city }}{{ areaFilter.town ?? '' }}
+        只顯示:{{ areaLabel }}
       </v-chip>
       <div
         v-if="mapNotice"

@@ -8,6 +8,8 @@ interface Props {
   loading: boolean
   // 範圍內沒有景點(不含載入中、載入失敗)
   empty: boolean
+  // 有地區篩選時的地區名稱;空狀態會改成說明是篩選造成的
+  areaLabel: string | null
   selectedId: string | null
 }
 
@@ -37,8 +39,14 @@ const emit = defineEmits<{
         :icon="mdiMapMarkerOffOutline"
         size="40"
       />
-      <p class="place-empty-title">這個範圍內沒有景點</p>
-      <p>試試移動或縮小地圖</p>
+      <template v-if="props.areaLabel">
+        <p class="place-empty-title">目前畫面內沒有{{ props.areaLabel }}的景點</p>
+        <p>點地圖上的標籤可回到該區</p>
+      </template>
+      <template v-else>
+        <p class="place-empty-title">這個範圍內沒有景點</p>
+        <p>試試移動或縮小地圖</p>
+      </template>
     </div>
     <PlaceCard
       v-for="place in props.places"
