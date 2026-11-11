@@ -72,7 +72,9 @@ export interface PlaceDetailResponse {
 
 export const MAX_SEARCH_AREAS = 5
 
-// 搜尋到的「地區」:整個縣市(town 為 null)或某個鄉鎮。bounds 是該地區所有景點的外框
+// 搜尋到的「地區」:整個縣市(town 為 null)或某個鄉鎮。
+// bounds 是該地區所有景點座標的最小外框,不是行政區邊界;大縣市的外框可能超過
+// MAX_SPAN_DEGREES(0.5 度),前端地圖無法縮小到放得下,只能分塊瀏覽
 export interface SearchArea {
   city: string
   town: string | null
