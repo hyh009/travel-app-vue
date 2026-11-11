@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch, onMounted } from 'vue'
 import { mdiAlertCircleOutline, mdiAlertOutline } from '@mdi/js'
-import type { PlacesQuery, PlaceSummary, SearchArea } from '@travel/shared'
+import type { PlaceSummary, SearchArea, Viewport } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
@@ -17,13 +17,22 @@ const route = useRoute()
 const auth = useAuthStore()
 const toast = useToast()
 
-const bounds = ref<PlacesQuery | null>(null)
+// 畫面範圍由地圖決定,每次拖曳都會整個換掉;地區篩選由使用者操作決定。兩者分開存
+const bounds = ref<Viewport | null>(null)
+const areaFilter = ref<SearchArea | null>(null)
 const selectedId = ref<string | null>(null)
 const listRef = useTemplateRef<HTMLDivElement>('listContainer')
 const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
 const hoveredId = ref<string | null>(null)
 
-const { data, loading, error, setFavorite } = usePlaces(bounds, () => auth.user?.id)
+// 送給後端的查詢 = 畫面範圍 + 地區篩選(沒篩選時 city、town 是 undefined,不會送出)
+const placesQuery = computed(() => {
+  if (!bounds.value) return null
+  const area = areaFilter.value
+  return { ...bounds.value, city: area?.city, town: area?.town ?? undefined }
+})
+
+const { data, loading, error, setFavorite } = usePlaces(placesQuery, () => auth.user?.id)
 const { toggleFavorite, changeFavorite } = useFavoriteMutation(setFavorite)
 
 // 地圖範圍的狀態提示,浮在地圖上:載入失敗 > 景點太多(後端有筆數上限)
@@ -45,7 +54,7 @@ const mapNotice = computed<MapNotice | null>(() => {
   return null
 })
 
-function handleBoundsChange(value: PlacesQuery) {
+function handleBoundsChange(value: Viewport) {
   bounds.value = value
 }
 
@@ -57,6 +66,10 @@ function handleHoverIdChange(id: string | null) {
   hoveredId.value = id
 }
 
+function clearAreaFilter() {
+  areaFilter.value = null
+}
+
 function handleFocusCard(id: string) {
   selectedId.value = id
   const targetPlace = data.value?.places.find((p) => p.id === id)
@@ -66,6 +79,7 @@ function handleFocusCard(id: string) {
 
 // 搜尋選到景點:用搜尋結果自己的座標飛過去(它通常還不在目前載入的清單裡)
 function handleSearchPlace(place: PlaceSummary) {
+  areaFilter.value = null
   selectedId.value = place.id
   mapRef.value?.flyTo(place.lat, place.lng)
 }
@@ -73,6 +87,7 @@ function handleSearchPlace(place: PlaceSummary) {
 // 搜尋選到地區:把地區外框放進畫面,不選任何景點
 function handleSearchArea(area: SearchArea) {
   selectedId.value = null
+  areaFilter.value = area
   mapRef.value?.fitBounds(area.bounds)
 }
 
@@ -157,10 +172,21 @@ watch(selectedId, () => scrollToSelected(), {
         @select-place="handleSearchPlace"
         @select-area="handleSearchArea"
       />
+      <v-chip
+        v-if="areaFilter"
+        class="map-filter"
+        color="primary"
+        variant="flat"
+        closable
+        close-label="取消地區篩選"
+        @click:close="clearAreaFilter"
+      >
+        只顯示:{{ areaFilter.city }}{{ areaFilter.town ?? '' }}
+      </v-chip>
       <div
         v-if="mapNotice"
         class="map-notice"
-        :class="mapNotice.type"
+        :class="[mapNotice.type, { 'below-filter': areaFilter }]"
       >
         <v-icon
           :icon="mapNotice.type === 'error' ? mdiAlertCircleOutline : mdiAlertOutline"
@@ -205,6 +231,15 @@ watch(selectedId, () => scrollToSelected(), {
   z-index: 1001;
 }
 
+/* 浮在搜尋框下面,提示目前只看某個地區 */
+.map-filter {
+  position: absolute;
+  top: 64px;
+  left: 64px;
+  z-index: 1001;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 30%);
+}
+
 /* 浮在搜尋框下面、地圖上緣中間;pointer-events: none 讓滑鼠和手指穿過去直接操作地圖 */
 .map-notice {
   position: absolute;
@@ -227,6 +262,9 @@ watch(selectedId, () => scrollToSelected(), {
   /* 換行時兩行平均分配,避免最後一行只剩一個字 */
   text-wrap: balance;
   pointer-events: none;
+}
+.map-notice.below-filter {
+  top: 108px;
 }
 .map-notice.warning {
   background: rgb(var(--v-theme-warning));

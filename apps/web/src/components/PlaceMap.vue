@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { PlacesQuery, PlaceSummary, SearchArea } from '@travel/shared'
+import type { PlaceSummary, SearchArea, Viewport } from '@travel/shared'
 import { round, markerStyle, placeTooltip, minZoomFor } from '@/utils/map'
 
 const DEFAULT_MAP_CENTER: L.LatLngTuple = [25.04, 121.55]
@@ -17,7 +17,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-  'bounds-change': [bounds: PlacesQuery]
+  'bounds-change': [bounds: Viewport]
   select: [id: string]
 }>()
 defineExpose({ flyTo, fitBounds })
@@ -45,7 +45,8 @@ function fitBounds(b: SearchArea['bounds']) {
       [b.swLat, b.swLng],
       [b.neLat, b.neLng],
     ],
-    { maxZoom: 15 },
+    // 不播動畫:篩選條件和畫面範圍同時就位,只查一次(動畫中會先用舊範圍查出空結果而閃一下)
+    { maxZoom: 15, animate: false },
   )
 }
 

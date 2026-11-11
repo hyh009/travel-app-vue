@@ -32,6 +32,9 @@ export const placesQuerySchema = z
 
 export type PlacesQuery = z.output<typeof placesQuerySchema>
 
+// 地圖的畫面範圍:只有四個座標,不含地區篩選
+export type Viewport = Pick<PlacesQuery, 'swLat' | 'swLng' | 'neLat' | 'neLng'>
+
 export const MAX_SEARCH_RESULTS = 20
 
 export const searchQuerySchema = z.object({

@@ -2,8 +2,11 @@ import type { PlacesQuery, PlacesResponse, SearchResponse } from '@travel/shared
 import { request } from '@/api/client'
 
 export function fetchPlaces(bounds: PlacesQuery, signal?: AbortSignal) {
+  // 沒給的選填參數(city、town)不能送出去,否則 undefined 會變成字串 "undefined"
   const query = new URLSearchParams(
-    Object.entries(bounds).map(([key, value]) => [key, String(value)]),
+    Object.entries(bounds)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, String(value)]),
   )
   return request<PlacesResponse>(`/places?${query}`, { signal })
 }

@@ -1,9 +1,9 @@
-import { onWatcherCleanup, ref, shallowRef, watch, type Ref, type WatchSource } from 'vue'
+import { onWatcherCleanup, ref, shallowRef, watch, type WatchSource } from 'vue'
 import type { PlacesQuery, PlacesResponse } from '@travel/shared'
 import { fetchPlaces } from '@/services/places.service'
 import { isAbortError } from '@/api/error'
 
-export function usePlaces(bounds: Ref<PlacesQuery | null>, identity: WatchSource) {
+export function usePlaces(query: WatchSource<PlacesQuery | null>, identity: WatchSource) {
   const data = shallowRef<PlacesResponse | null>(null)
   const loading = ref(false)
   const error = ref<Error | null>(null)
@@ -17,9 +17,9 @@ export function usePlaces(bounds: Ref<PlacesQuery | null>, identity: WatchSource
   }
 
   watch(
-    [bounds, identity],
-    async ([query]) => {
-      if (!query) return
+    [query, identity],
+    async ([q]) => {
+      if (!q) return
 
       const controller = new AbortController()
       onWatcherCleanup(() => controller.abort())
@@ -28,7 +28,7 @@ export function usePlaces(bounds: Ref<PlacesQuery | null>, identity: WatchSource
       error.value = null
 
       try {
-        data.value = await fetchPlaces(query, controller.signal)
+        data.value = await fetchPlaces(q, controller.signal)
       } catch (err) {
         if (isAbortError(err)) return
         error.value = err instanceof Error ? err : new Error(String(err))
