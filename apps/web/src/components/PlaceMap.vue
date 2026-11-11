@@ -31,9 +31,19 @@ const markers = new Map<string, L.CircleMarker>()
 let resizeObserver: ResizeObserver | null = null
 
 // ── Function ──
+// 飛得很遠(例如從北部搜到南投)時,Leaflet 預設的飛行動畫要 4~5 秒,這段時間列表沒有任何回饋,
+// 看起來像沒反應。遠距離固定 1.5 秒;近距離維持預設,因為預設本來就比較快
+const FAR_FLY_METERS = 30_000
+const FAR_FLY_SECONDS = 1.5
+
 function flyTo(lat: number, lng: number) {
   if (!map) return
-  map.flyTo([lat, lng], Math.max(map.getZoom(), 15))
+  const far = map.getCenter().distanceTo([lat, lng]) > FAR_FLY_METERS
+  map.flyTo(
+    [lat, lng],
+    Math.max(map.getZoom(), 15),
+    far ? { duration: FAR_FLY_SECONDS } : undefined,
+  )
 }
 
 // 把一個地區的外框放進畫面。縮放不會低於最小縮放(大縣市會停在中心附近);
