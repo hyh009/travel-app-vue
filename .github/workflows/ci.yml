@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # TEMP: ci/deploy 只是為了在合併前測試部署流程,測完要拿掉
+    branches: [main, ci/deploy]
   pull_request:
     branches: [main]
   # 可以在 Actions 頁面手動執行(用來測試部署流程)
