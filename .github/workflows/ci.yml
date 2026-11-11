@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # 可以在 Actions 頁面手動執行(用來測試部署流程)
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -65,3 +67,50 @@ jobs:
       # build 內含 vue-tsc 的型別檢查
       - name: 前端建置
         run: pnpm --filter web build
+
+  # check 通過後,SSH 進 Lightsail 更新網站。PR 只跑 check,不會部署
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # 同時只跑一個部署;後面的排隊等前面的做完,不要中途取消
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    env:
+      # secrets 一律走環境變數,不要直接寫進 run 的字串裡
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+    steps:
+      - name: 準備 SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          # 伺服器的公鑰(Variables,不是機密)。連線時用它確認對方真的是我們的伺服器
+          DEPLOY_HOST_KEY: ${{ vars.DEPLOY_HOST_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s %s\n' "$DEPLOY_HOST" "$DEPLOY_HOST_KEY" > ~/.ssh/known_hosts
+
+      # git pull --ff-only:伺服器上的程式碼和 GitHub 有分歧就拒絕,不會悄悄合併
+      # docker compose up -d --build:先建置,成功了才換掉舊容器,建置失敗時舊版繼續運作
+      - name: 部署
+        run: |
+          ssh -i ~/.ssh/id_deploy \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            'set -e
+             cd ~/travel-app-vue
+             git pull --ff-only origin main
+             docker compose up -d --build
+             docker image prune -f'
+
+      # 容器重啟需要幾秒,所以重試;一直不是 200 就讓這個 job 失敗
+      - name: 健康檢查
+        run: |
+          curl --fail --silent --show-error \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            https://54-66-110-220.sslip.io/api/health
