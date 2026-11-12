@@ -9,6 +9,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:seed": "tsx src/scripts/seed-attractions.ts",
+    "db:build-data": "tsx src/scripts/build-attractions.ts",
     "test": "vitest run"
   },
   "keywords": [],
