@@ -12,7 +12,8 @@ const rawAttractionSchema = z.object({
   town: z.string(),
   lat: z.number().min(-90).max(90),
   lon: z.number().min(-180).max(180),
-  is_free: z.boolean(),
+  // null = 官方沒有免費/收費資料
+  is_free: z.boolean().nullable(),
   website: z.string().nullish(),
 })
 

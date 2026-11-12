@@ -42,7 +42,8 @@ model Attraction {
   town        String
   lat         Float
   lng         Float
-  isFree      Boolean
+  // null = 官方資料沒有免費/收費資訊(約 85% 的景點)
+  isFree      Boolean?
   website     String?
 
   favorites Favorite[]
