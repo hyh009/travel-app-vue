@@ -13,9 +13,11 @@ interface Props {
   places: PlaceSummary[]
   selectedId: string | null
   hoveredId: string | null
+  // 地圖下緣被 bottom sheet 蓋住的高度(px)。飛過去、放進畫面時,要讓目標落在「看得到的那塊」中央
+  bottomInset?: number
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { bottomInset: 0 })
 const emit = defineEmits<{
   'bounds-change': [bounds: Viewport]
   select: [id: string]
@@ -38,12 +40,11 @@ const FAR_FLY_SECONDS = 1.5
 
 function flyTo(lat: number, lng: number) {
   if (!map) return
-  const far = map.getCenter().distanceTo([lat, lng]) > FAR_FLY_METERS
-  map.flyTo(
-    [lat, lng],
-    Math.max(map.getZoom(), 15),
-    far ? { duration: FAR_FLY_SECONDS } : undefined,
-  )
+  const zoom = Math.max(map.getZoom(), 15)
+  // 下緣被蓋住時,地圖中心要比目標再往下半個被蓋住的高度,目標才會在看得到的那塊中央
+  const center = map.unproject(map.project([lat, lng], zoom).add([0, props.bottomInset / 2]), zoom)
+  const far = map.getCenter().distanceTo(center) > FAR_FLY_METERS
+  map.flyTo(center, zoom, far ? { duration: FAR_FLY_SECONDS } : undefined)
 }
 
 // 把一個地區的外框放進畫面。縮放不會低於最小縮放(大縣市會停在中心附近);
@@ -56,7 +57,7 @@ function fitBounds(b: SearchArea['bounds']) {
       [b.neLat, b.neLng],
     ],
     // 不播動畫:篩選條件和畫面範圍同時就位,只查一次(動畫中會先用舊範圍查出空結果而閃一下)
-    { maxZoom: 15, animate: false },
+    { maxZoom: 15, animate: false, paddingBottomRight: [0, props.bottomInset] },
   )
 }
 
@@ -173,6 +174,13 @@ watch(
 </style>
 
 <style>
+/* 觸控裝置用雙指縮放,不需要按鈕(會擋畫面) */
+@media (pointer: coarse) {
+  .leaflet-control-zoom {
+    display: none;
+  }
+}
+
 /* tooltip 是 Leaflet 自己建立的 DOM,不在這個元件的 scope 內,所以用全域樣式 */
 .place-tip {
   padding: 6px 12px;

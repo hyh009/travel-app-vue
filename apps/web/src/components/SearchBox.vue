@@ -7,6 +7,8 @@ import { useSearch } from '@/composables/useSearch'
 const emit = defineEmits<{
   'select-place': [place: PlaceSummary]
   'select-area': [area: SearchArea]
+  // 輸入框取得焦點(手機會彈出鍵盤)
+  focus: []
 }>()
 
 const { query, results, loading } = useSearch()
@@ -71,6 +73,7 @@ function handleSelect(item: Item | null) {
     :menu-icon="''"
     class="search-box"
     @update:model-value="handleSelect"
+    @focus="emit('focus')"
   >
     <template #item="{ item, props: itemProps }">
       <!-- 分組標題由 Vuetify 自己畫;只有地區和景點走到這裡 -->

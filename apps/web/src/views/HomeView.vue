@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch, onMounted } from 'vue'
+import { useMediaQuery, useWindowSize } from '@vueuse/core'
 import { mdiAlertCircleOutline, mdiAlertOutline, mdiCrosshairsGps } from '@mdi/js'
 import type { PlaceSummary, SearchArea, Viewport } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
+import PlaceSheet from '@/components/PlaceSheet.vue'
 import SearchBox from '@/components/SearchBox.vue'
 import { useFavoriteMutation } from '@/composables/useFavoriteMutation'
 import { useAuthStore } from '@/stores/auth'
@@ -27,6 +29,13 @@ const { selectedId, hoveredId, setSelectId, setHoverId } = useSelection()
 
 const listRef = useTemplateRef<HTMLDivElement>('listContainer')
 const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
+const sheetRef = useTemplateRef<InstanceType<typeof PlaceSheet>>('sheet')
+
+// 用「裝置怎麼操作」而不是螢幕寬度判斷:觸控裝置用 bottom sheet,滑鼠用左右分割的列表
+const isTouch = useMediaQuery('(pointer: coarse)')
+const { height: windowHeight } = useWindowSize()
+// sheet 半開時蓋住地圖下半部;飛過去、放進畫面時要把這塊讓出來
+const mapBottomInset = computed(() => (isTouch.value ? Math.round(windowHeight.value / 2) : 0))
 
 // 送給後端的查詢 = 畫面範圍 + 地區篩選(沒篩選時 city、town 是 undefined,不會送出)
 const placesQuery = computed(() => {
@@ -61,6 +70,17 @@ function handleBoundsChange(value: Viewport) {
   bounds.value = value
 }
 
+// 點地圖上的標記:選取,並把 sheet 拉到半開讓使用者看到對應的卡片
+function handleMapSelect(id: string) {
+  setSelectId(id)
+  sheetRef.value?.snapTo('half')
+}
+
+// 手機鍵盤會佔掉半個畫面:搜尋時把 sheet 收到最低,搜尋結果直接浮在地圖上
+function handleSearchFocus() {
+  sheetRef.value?.snapTo('peek')
+}
+
 function handleFocusCard(id: string) {
   setSelectId(id)
   const targetPlace = data.value?.places.find((p) => p.id === id)
@@ -72,6 +92,7 @@ function handleFocusCard(id: string) {
 function handleSearchPlace(place: PlaceSummary) {
   clearAreaFilter()
   setSelectId(place.id)
+  sheetRef.value?.snapTo('half')
   mapRef.value?.flyTo(place.lat, place.lng)
 }
 
@@ -84,15 +105,33 @@ function focusArea() {
 function handleSearchArea(area: SearchArea) {
   setSelectId(null)
   setArea(area)
+  sheetRef.value?.snapTo('half')
   focusArea()
 }
 
 function scrollToSelected() {
   const id = selectedId.value
-  const el = id ? listRef.value?.querySelector(`[data-id="${CSS.escape(id)}"]`) : null
-  if (el) el.scrollIntoView({ inline: 'center' })
+  // 列表可能在左邊的容器,也可能在 bottom sheet 裡(傳送到 body),所以從整份文件找
+  const el = id ? document.querySelector(`.place-list [data-id="${CSS.escape(id)}"]`) : null
+  // 橫向排列要置中;sheet 裡是直向,貼到上緣最順
+  if (el) el.scrollIntoView(isTouch.value ? { block: 'start' } : { inline: 'center' })
   else listRef.value?.scrollTo({ top: 0 })
 }
+
+// 桌機的左側列表和 bottom sheet 裡的列表,吃同一組 props
+const listProps = computed(() => ({
+  places: data.value?.places ?? [],
+  loading: loading.value,
+  empty: isEmpty.value,
+  areaLabel: areaLabel.value,
+  selectedId: selectedId.value,
+}))
+
+// bottom sheet 標題列:收合時只看得到這一行
+const sheetTitle = computed(() => {
+  if (!data.value) return '載入中…'
+  return `${areaLabel.value ?? '此範圍'} ${data.value.total} 個景點`
+})
 
 function handleToggleFavorite(attractionId: string) {
   if (!auth.isLoggedIn) {
@@ -148,16 +187,13 @@ watch(selectedId, () => scrollToSelected(), {
 <template>
   <div class="main">
     <div
+      v-if="!isTouch"
       ref="listContainer"
       class="list-container"
       @wheel="handleListWheel"
     >
       <PlaceList
-        :places="data?.places ?? []"
-        :loading="loading"
-        :empty="isEmpty"
-        :area-label="areaLabel"
-        :selected-id="selectedId"
+        v-bind="listProps"
         @hover-card="setHoverId"
         @focus-card="handleFocusCard"
         @toggle-favorite="handleToggleFavorite"
@@ -168,6 +204,7 @@ watch(selectedId, () => scrollToSelected(), {
         class="map-search"
         @select-place="handleSearchPlace"
         @select-area="handleSearchArea"
+        @focus="handleSearchFocus"
       />
       <v-chip
         v-if="areaFilter"
@@ -198,10 +235,46 @@ watch(selectedId, () => scrollToSelected(), {
         :places="data?.places ?? []"
         :selected-id="selectedId"
         :hovered-id="hoveredId"
+        :bottom-inset="mapBottomInset"
         @bounds-change="handleBoundsChange"
-        @select="setSelectId"
+        @select="handleMapSelect"
       />
     </div>
+    <PlaceSheet
+      v-if="isTouch"
+      ref="sheet"
+    >
+      <template #header>
+        <div class="sheet-header">
+          <span class="sheet-title">{{ sheetTitle }}</span>
+          <!-- 地圖本身的版權標示會被面板蓋住,OpenStreetMap 要求看得到,所以放在這裡 -->
+          <a
+            class="sheet-attribution"
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noopener"
+          >
+            © OpenStreetMap
+          </a>
+          <!-- 載入中:放在標題列(不會跟著列表捲走),而且脫離版面流,不會把卡片推下去 -->
+          <v-progress-linear
+            v-if="loading"
+            class="sheet-loading"
+            color="primary"
+            absolute
+            location="bottom"
+            indeterminate
+            height="2"
+          />
+        </div>
+      </template>
+      <PlaceList
+        v-bind="listProps"
+        vertical
+        @focus-card="handleFocusCard"
+        @toggle-favorite="handleToggleFavorite"
+      />
+    </PlaceSheet>
   </div>
 </template>
 
@@ -272,6 +345,33 @@ watch(selectedId, () => scrollToSelected(), {
 .map-notice.error {
   background: rgb(var(--v-theme-error));
   color: rgb(var(--v-theme-on-error));
+}
+
+/* 觸控裝置沒有縮放按鈕,搜尋框和標籤靠左就好 */
+@media (pointer: coarse) {
+  .map-search {
+    left: 12px;
+    width: calc(100% - 24px);
+  }
+  .map-filter {
+    left: 12px;
+  }
+}
+
+.sheet-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sheet-title {
+  font-size: 15px;
+  font-weight: 500;
+}
+.sheet-attribution {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
 @media (max-width: 1024px) {
