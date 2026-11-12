@@ -5,12 +5,14 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import { config } from './lib/config.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import { requestLogger } from './middleware/requestLogger.js'
 import authRouter from './routes/auth.js'
 import favoritesRouter from './routes/favorites.js'
 import placesRouter from './routes/places.js'
 
 export const app = express()
 
+if (config.isDev) app.use(requestLogger)
 app.use(cors({ origin: config.webOrigin, credentials: true }))
 app.use(express.json())
 app.use(cookieParser())
