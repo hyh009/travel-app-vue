@@ -50,7 +50,8 @@ export interface PlaceSummary {
   town: string
   lat: number
   lng: number
-  isFree: boolean
+  // null = 沒有資料,不知道是否免費
+  isFree: boolean | null
   // 訪客一律為 false
   isFavorite: boolean
 }

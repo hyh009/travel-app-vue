@@ -46,7 +46,9 @@ const emit = defineEmits<{
         </p>
 
         <div class="meta">
+          <!-- 沒有資料(null)就不顯示,不能當成收費 -->
           <span
+            v-if="place.isFree !== null"
             class="badge"
             :class="[place.isFree ? 'free' : 'paid']"
           >
@@ -181,6 +183,8 @@ const emit = defineEmits<{
 .actions {
   display: flex;
   gap: 4px;
+  /* 沒有標籤時,按鈕仍然靠右 */
+  margin-left: auto;
 }
 
 .icon-btn {

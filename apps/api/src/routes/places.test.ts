@@ -58,6 +58,22 @@ describe('GET /api/places', () => {
     expect(res.status).toBe(401)
   })
 
+  it('isFree 有三種值:免費、收費、沒有資料(null,不能當成收費)', async () => {
+    const base = { description: '', city: '測試市', town: '測試區', lat: 23.6, lng: 120.8 }
+    await prisma.attraction.createMany({
+      data: [
+        { ...base, id: 'free', name: '免費的', isFree: true },
+        { ...base, id: 'paid', name: '收費的', isFree: false },
+        { ...base, id: 'unknown', name: '不知道', isFree: null },
+      ],
+    })
+    const res = await request(app).get(`/api/places?${NEAR}`).expect(200)
+    const byId = Object.fromEntries(
+      res.body.places.map((p: { id: string; isFree: boolean | null }) => [p.id, p.isFree]),
+    )
+    expect(byId).toMatchObject({ free: true, paid: false, unknown: null })
+  })
+
   it('只給 city:只回該縣市的景點', async () => {
     await seedTaiwan()
     const res = await request(app)
