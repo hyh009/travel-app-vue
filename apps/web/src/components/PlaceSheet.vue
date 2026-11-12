@@ -15,7 +15,12 @@ function snapTo(snap: SheetSnap) {
   sheet.value?.snapToPoint(SNAP_INDEX[snap])
 }
 
-defineExpose({ snapTo })
+// 套件把面板傳送到 body,捲動的是它自己的 [data-vsbs-scroll] 區域,不是外面的任何容器
+function scrollToTop() {
+  document.querySelector('[data-vsbs-scroll]')?.scrollTo({ top: 0 })
+}
+
+defineExpose({ snapTo, scrollToTop })
 </script>
 
 <template>

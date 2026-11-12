@@ -125,6 +125,8 @@ function scrollToSelected() {
   const el = id ? document.querySelector(`.place-list [data-id="${CSS.escape(id)}"]`) : null
   // 橫向排列要置中;sheet 裡是直向,貼到上緣最順
   if (el) el.scrollIntoView(isTouch.value ? { block: 'start' } : { inline: 'center' })
+  // 沒有選取:列表回到最上面。手機的列表在 bottom sheet 裡,不是 listRef
+  else if (isTouch.value) sheetRef.value?.scrollToTop()
   else listRef.value?.scrollTo({ top: 0 })
 }
 
