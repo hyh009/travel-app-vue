@@ -45,6 +45,11 @@ const placesQuery = computed(() => {
 })
 
 const { data, loading, error, setFavorite } = usePlaces(placesQuery, () => auth.user?.id)
+
+// 飛行途中也會收到清單(舊範圍的查詢),那時目標還在地圖外,不能因為它不在清單裡就取消選取
+const isFlying = ref(false)
+// 飛行中列表還是舊範圍的內容:不能顯示成「沒有景點」或舊的筆數警告,要跟載入中一樣處理
+const listLoading = computed(() => loading.value || isFlying.value)
 const { toggleFavorite, changeFavorite } = useFavoriteMutation(setFavorite)
 
 // 地圖範圍的狀態提示,浮在地圖上:載入失敗 > 景點太多(後端有筆數上限)
@@ -54,11 +59,11 @@ interface MapNotice {
 }
 // 範圍內沒有景點:是列表的空狀態,不是地圖的警告。載入中、載入失敗時不算
 const isEmpty = computed(
-  () => !loading.value && !error.value && !!data.value && data.value.places.length === 0,
+  () => !listLoading.value && !error.value && !!data.value && data.value.places.length === 0,
 )
 const mapNotice = computed<MapNotice | null>(() => {
   if (error.value) return { type: 'error', text: '載入失敗,請稍後再試' }
-  if (loading.value || !data.value) return null
+  if (listLoading.value || !data.value) return null
   const { places, total } = data.value
   if (total > places.length) {
     return { type: 'warning', text: `顯示 ${places.length} / ${total} 個,放大地圖可發現更多景點` }
@@ -89,11 +94,16 @@ function handleFocusCard(id: string) {
 }
 
 // 搜尋選到景點:用搜尋結果自己的座標飛過去(它通常還不在目前載入的清單裡)
-function handleSearchPlace(place: PlaceSummary) {
+async function handleSearchPlace(place: PlaceSummary) {
   clearAreaFilter()
   setSelectId(place.id)
   sheetRef.value?.snapTo('half')
-  mapRef.value?.flyTo(place.lat, place.lng)
+  isFlying.value = true
+  try {
+    await mapRef.value?.flyTo(place.lat, place.lng)
+  } finally {
+    isFlying.value = false
+  }
 }
 
 function focusArea() {
@@ -121,7 +131,7 @@ function scrollToSelected() {
 // 桌機的左側列表和 bottom sheet 裡的列表,吃同一組 props
 const listProps = computed(() => ({
   places: data.value?.places ?? [],
-  loading: loading.value,
+  loading: listLoading.value,
   empty: isEmpty.value,
   areaLabel: areaLabel.value,
   selectedId: selectedId.value,
@@ -172,7 +182,11 @@ onMounted(async () => {
 watch(
   () => data.value?.places.map((p) => p.id).join(','),
   () => {
-    if (selectedId.value && !data.value?.places.some((p) => p.id === selectedId.value)) {
+    if (
+      selectedId.value &&
+      !isFlying.value &&
+      !data.value?.places.some((p) => p.id === selectedId.value)
+    ) {
       setSelectId(null)
     }
     scrollToSelected()
@@ -258,7 +272,7 @@ watch(selectedId, () => scrollToSelected(), {
           </a>
           <!-- 載入中:放在標題列(不會跟著列表捲走),而且脫離版面流,不會把卡片推下去 -->
           <v-progress-linear
-            v-if="loading"
+            v-if="listLoading"
             class="sheet-loading"
             color="primary"
             absolute
