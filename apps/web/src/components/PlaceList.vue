@@ -82,6 +82,13 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: center;
 }
+/* bottom sheet 裡的容器高度由內容決定,min-height: 100% 沒有可靠的基準:
+   列表縮水時會卡在上一次的高度(例如 366 張卡片的 5 萬 px),空狀態就被置中到很下面 */
+.place-list.is-vertical.is-empty {
+  min-height: 0;
+  justify-content: flex-start;
+  padding: 24px 0;
+}
 .place-empty {
   display: flex;
   flex-direction: column;
