@@ -32,11 +32,14 @@ const listRef = useTemplateRef<HTMLDivElement>('listContainer')
 const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
 const sheetRef = useTemplateRef<InstanceType<typeof PlaceSheet>>('sheet')
 
-// 用「裝置怎麼操作」而不是螢幕寬度判斷:觸控裝置用 bottom sheet,滑鼠用左右分割的列表
+// 版面看「空間夠不夠」:窄螢幕用 bottom sheet,寬螢幕用左邊列表 + 右邊地圖。
+// 960px 是 Vuetify 的 md 斷點:左邊列表 400px,地圖至少還有 560px
+const isCompact = useMediaQuery('(max-width: 959.98px)')
+// 操作方式看「用手指還是滑鼠」:手指用全螢幕搜尋頁(螢幕鍵盤會佔掉半個畫面)
 const isTouch = useMediaQuery('(pointer: coarse)')
 const { height: windowHeight } = useWindowSize()
 // sheet 半開時蓋住地圖下半部;飛過去、放進畫面時要把這塊讓出來
-const mapBottomInset = computed(() => (isTouch.value ? Math.round(windowHeight.value / 2) : 0))
+const mapBottomInset = computed(() => (isCompact.value ? Math.round(windowHeight.value / 2) : 0))
 
 // 送給後端的查詢 = 畫面範圍 + 地區篩選(沒篩選時 city、town 是 undefined,不會送出)
 const placesQuery = computed(() => {
@@ -119,10 +122,10 @@ function scrollToSelected() {
   const id = selectedId.value
   // 列表可能在左邊的容器,也可能在 bottom sheet 裡(傳送到 body),所以從整份文件找
   const el = id ? document.querySelector(`.place-list [data-id="${CSS.escape(id)}"]`) : null
-  // 橫向排列要置中;sheet 裡是直向,貼到上緣最順
-  if (el) el.scrollIntoView(isTouch.value ? { block: 'start' } : { inline: 'center' })
-  // 沒有選取:列表回到最上面。手機的列表在 bottom sheet 裡,不是 listRef
-  else if (isTouch.value) sheetRef.value?.scrollToTop()
+  // 列表都是直向的,貼到上緣最順
+  if (el) el.scrollIntoView({ block: 'start' })
+  // 沒有選取:列表回到最上面。窄螢幕的列表在 bottom sheet 裡,不是 listRef
+  else if (isCompact.value) sheetRef.value?.scrollToTop()
   else listRef.value?.scrollTo({ top: 0 })
 }
 
@@ -157,16 +160,6 @@ function handleToggleFavorite(attractionId: string) {
   toggleFavorite(targetPlace)
 }
 
-function handleListWheel(e: WheelEvent) {
-  const el = listRef.value
-  if (!el) return
-  if (el.scrollWidth <= el.clientWidth) return
-  if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
-
-  e.preventDefault()
-  el.scrollLeft += e.deltaY
-}
-
 onMounted(async () => {
   const id = route.query.favorite
   if (typeof id !== 'string' || !auth.isLoggedIn) return
@@ -199,10 +192,9 @@ watch(selectedId, () => scrollToSelected(), {
 <template>
   <div class="main">
     <div
-      v-if="!isTouch"
+      v-if="!isCompact"
       ref="listContainer"
       class="list-container"
-      @wheel="handleListWheel"
     >
       <PlaceList
         v-bind="listProps"
@@ -260,7 +252,7 @@ watch(selectedId, () => scrollToSelected(), {
       />
     </div>
     <PlaceSheet
-      v-if="isTouch"
+      v-if="isCompact"
       ref="sheet"
     >
       <template #header>
@@ -391,23 +383,5 @@ watch(selectedId, () => scrollToSelected(), {
   flex-shrink: 0;
   font-size: 11px;
   color: rgba(var(--v-theme-on-surface), 0.6);
-}
-
-@media (max-width: 1024px) {
-  .main {
-    flex-direction: column-reverse;
-  }
-  .list-container {
-    width: 100%;
-    /* 固定高度:列表換內容時地圖大小不會跟著變 */
-    height: 260px;
-    flex: none;
-    overflow-y: hidden;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .list-container::-webkit-scrollbar {
-    display: none;
-  }
 }
 </style>

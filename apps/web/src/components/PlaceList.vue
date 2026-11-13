@@ -11,7 +11,7 @@ interface Props {
   // 有地區篩選時的地區名稱;空狀態會改成說明是篩選造成的
   areaLabel: string | null
   selectedId: string | null
-  // 一律直向排列(放在 bottom sheet 裡)。預設是窄螢幕橫向、寬螢幕直向
+  // 放在 bottom sheet 裡(窄螢幕)。載入條改放 sheet 標題列,卡片高度由內容決定
   vertical?: boolean
 }
 
@@ -124,22 +124,5 @@ const emit = defineEmits<{
 /* scrollIntoView 把卡片貼到捲動區上緣時,留一點空間給卡片的陰影和選取外框 */
 .place-list.is-vertical .place-card {
   scroll-margin-top: 12px;
-}
-
-@media (max-width: 1024px) {
-  .place-list:not(.is-vertical) {
-    flex-direction: row;
-    width: max-content;
-    height: 100%;
-  }
-  /* 橫排時空狀態要撐滿整個列表寬度才置得到中間 */
-  .place-list:not(.is-vertical).is-empty {
-    width: 100%;
-  }
-  .place-list:not(.is-vertical) .place-card {
-    width: 280px;
-    flex-shrink: 0;
-    height: 100%;
-  }
 }
 </style>
