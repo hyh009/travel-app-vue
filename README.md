@@ -7,12 +7,10 @@
 **示範帳號:** `demo@mail.com` / `demo1234`
 
 <p align="center">
-  <img src="docs/screenshots/desktop.jpg" alt="桌機版:搜尋「台北市中正區」後,只顯示該區的景點" width="100%">
+  <img src="docs/screenshots/demo.gif" alt="手機版操作:開啟全螢幕搜尋、輸入「九份」、選擇景點,地圖跳過去並選取對應的卡片" width="300">
 </p>
 <p align="center">
-  <img src="docs/screenshots/demo.gif" alt="手機版操作:開啟全螢幕搜尋、輸入「九份」、選擇景點,地圖跳過去並選取對應的卡片" width="300">
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/mobile.jpg" alt="手機版:地圖在上、景點卡片放在可拖曳的 bottom sheet" width="300">
+  <img src="docs/screenshots/desktop.jpg" alt="桌機版:搜尋「台北市中正區」後,只顯示該區的景點" width="100%">
 </p>
 
 ## 功能
