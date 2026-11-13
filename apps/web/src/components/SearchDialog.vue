@@ -220,6 +220,8 @@ function reset() {
   width: 100%;
   height: 40px;
   padding: 0 12px;
+  /* <button> 預設有 2px 的黑色邊框,要清掉(看起來像輸入框的黑線) */
+  border: 0;
   border-radius: 4px;
   background: rgb(var(--v-theme-surface));
   color: rgba(var(--v-theme-on-surface), 0.6);
