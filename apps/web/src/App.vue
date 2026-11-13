@@ -35,3 +35,14 @@ watch(
     </v-snackbar>
   </v-app>
 </template>
+
+<style>
+/* 地圖 App 不需要網頁本身的雙指縮放(地圖的縮放由 Leaflet 處理):
+   一根手指在面板、另一根在 header 時,瀏覽器會把它當成縮放整個網頁,放大後重新整理也不會復原。
+   只在觸控裝置套用。地圖容器自己是 touch-action: none,和這個取交集後不變 */
+@media (pointer: coarse) {
+  html {
+    touch-action: pan-x pan-y;
+  }
+}
+</style>
