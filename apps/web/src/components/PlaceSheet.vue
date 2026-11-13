@@ -49,6 +49,13 @@ defineExpose({ snapTo, scrollToTop })
   z-index: 1000;
   max-width: none !important;
 }
+/* 雙指落在面板上時,不要讓瀏覽器把整個網頁放大(地圖的雙指縮放由 Leaflet 處理,但面板蓋在地圖上,
+   手勢不會傳到地圖)。只允許垂直捲動,面板本來就沒有橫向捲動。
+   套件只在標題列和頁尾設了 touch-action: none,中間的捲動區沒有 */
+[data-vsbs-sheet],
+[data-vsbs-scroll] {
+  touch-action: pan-y;
+}
 /* 標題列要能當定位基準:載入條貼在標題列的底邊(列表的正上方) */
 [data-vsbs-header] {
   position: relative;
