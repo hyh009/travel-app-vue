@@ -10,7 +10,9 @@
   <img src="docs/screenshots/desktop.jpg" alt="桌機版:搜尋「台北市中正區」後,只顯示該區的景點" width="100%">
 </p>
 <p align="center">
-  <img src="docs/screenshots/mobile.jpg" alt="手機版:地圖在上、景點卡片橫向捲動" width="320">
+  <img src="docs/screenshots/demo.gif" alt="手機版操作:開啟全螢幕搜尋、輸入「九份」、選擇景點,地圖跳過去並選取對應的卡片" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile.jpg" alt="手機版:地圖在上、景點卡片放在可拖曳的 bottom sheet" width="300">
 </p>
 
 ## 功能
@@ -20,7 +22,32 @@
 - **地區篩選**:選了某個縣市或鄉鎮後,列表只顯示該地區的景點,地圖上有標籤標示目前的篩選,點標籤回到該區,按 × 取消
 - **收藏**:樂觀更新(先更新畫面,失敗再還原並提示);沒登入時按愛心會導去登入,登入後自動完成剛才的收藏
 - **登入系統**:Email 註冊/登入,登出或登入逾期會自動離開需要登入的頁面
-- **響應式**:1024px 以下地圖在上、卡片橫向捲動
+- **響應式**:960px 以下地圖在上、景點放在可拖曳的 bottom sheet(收起/半開/全開);觸控裝置的搜尋是全螢幕頁面,避免鍵盤擋住下拉選單
+
+## 架構
+
+```mermaid
+flowchart LR
+  subgraph Web["瀏覽器 (apps/web)"]
+    Home["HomeView"] --> HC["usePlaces · useAreaFilter<br/>useSelection<br/>useSearch(搜尋元件內)"]
+    Home --> Mut["useFavoriteMutation"]
+    Home --> Map["Leaflet 地圖"]
+    Fav["FavoritesView"] --> FC["useFavorites"]
+    Fav --> Mut
+    Auth["Pinia: auth store<br/>全站共用的登入狀態"]
+    HC --> Svc["services<br/>places · favorite · auth"]
+    FC --> Svc
+    Mut --> Svc
+    Auth --> Svc
+  end
+  subgraph Server["Lightsail · Docker Compose"]
+    Caddy["Caddy<br/>自動 HTTPS"] --> Api["Express 5 API<br/>(apps/api)"]
+    Api --> DB[("PostgreSQL<br/>Prisma 7")]
+  end
+  Shared["packages/shared<br/>zod schema 與型別"] -. 共用驗證 .-> Web
+  Shared -. 共用驗證 .-> Api
+  Svc -- "REST + httpOnly cookie" --> Caddy
+```
 
 ## 技術
 
