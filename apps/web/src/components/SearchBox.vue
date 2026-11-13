@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 import { mdiMagnify, mdiMapMarkerOutline, mdiMapMarkerRadiusOutline } from '@mdi/js'
 import type { PlaceSummary, SearchArea } from '@travel/shared'
 import { useSearch } from '@/composables/useSearch'
@@ -7,8 +7,6 @@ import { useSearch } from '@/composables/useSearch'
 const emit = defineEmits<{
   'select-place': [place: PlaceSummary]
   'select-area': [area: SearchArea]
-  // 輸入框取得焦點(手機會彈出鍵盤)
-  focus: []
 }>()
 
 const { query, results, loading } = useSearch()
@@ -45,13 +43,8 @@ const items = computed<Item[]>(() => {
 // 還沒輸入、或還在等結果時,不要顯示「沒有資料」
 const hasQuery = computed(() => query.value.trim() !== '')
 
-const autocomplete = useTemplateRef('autocomplete')
-
 function handleSelect(item: Item | null) {
   if (!item || !('kind' in item)) return
-  // 選完之後收起鍵盤:input 失焦,手機的鍵盤就會跟著消失。
-  // 不能馬上 blur:選單關閉時 Vuetify 會把焦點還給輸入框,所以等它還完再失焦
-  setTimeout(() => autocomplete.value?.blur(), 0)
   if (item.kind === 'area') emit('select-area', item.area)
   else emit('select-place', item.place)
 }
@@ -59,7 +52,6 @@ function handleSelect(item: Item | null) {
 
 <template>
   <v-autocomplete
-    ref="autocomplete"
     v-model:search="query"
     :model-value="null"
     :items="items"
@@ -79,7 +71,6 @@ function handleSelect(item: Item | null) {
     :menu-icon="''"
     class="search-box"
     @update:model-value="handleSelect"
-    @focus="emit('focus')"
   >
     <template #item="{ item, props: itemProps }">
       <!-- 分組標題由 Vuetify 自己畫;只有地區和景點走到這裡 -->

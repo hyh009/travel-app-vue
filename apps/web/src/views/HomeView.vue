@@ -8,6 +8,7 @@ import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
 import PlaceSheet from '@/components/PlaceSheet.vue'
 import SearchBox from '@/components/SearchBox.vue'
+import SearchDialog from '@/components/SearchDialog.vue'
 import { useFavoriteMutation } from '@/composables/useFavoriteMutation'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
@@ -79,11 +80,6 @@ function handleBoundsChange(value: Viewport) {
 function handleMapSelect(id: string) {
   setSelectId(id)
   sheetRef.value?.snapTo('half')
-}
-
-// 手機鍵盤會佔掉半個畫面:搜尋時把 sheet 收到最低,搜尋結果直接浮在地圖上
-function handleSearchFocus() {
-  sheetRef.value?.snapTo('peek')
 }
 
 function handleFocusCard(id: string) {
@@ -216,11 +212,18 @@ watch(selectedId, () => scrollToSelected(), {
       />
     </div>
     <div class="map-container">
-      <SearchBox
+      <!-- 觸控裝置:點了開全螢幕搜尋頁(鍵盤佔掉半個畫面,行內下拉選單不好用);滑鼠裝置:行內下拉 -->
+      <SearchDialog
+        v-if="isTouch"
         class="map-search"
         @select-place="handleSearchPlace"
         @select-area="handleSearchArea"
-        @focus="handleSearchFocus"
+      />
+      <SearchBox
+        v-else
+        class="map-search"
+        @select-place="handleSearchPlace"
+        @select-area="handleSearchArea"
       />
       <v-chip
         v-if="areaFilter"
