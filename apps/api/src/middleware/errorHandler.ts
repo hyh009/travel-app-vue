@@ -3,6 +3,8 @@ import type { NextFunction, Request, Response } from 'express'
 import { HttpError, errors } from '../lib/errors.js'
 
 function send(res: Response, code: ErrorCode, details?: unknown) {
+  // 給 requestLogger 印出錯誤代碼用
+  res.locals.apiError = { code, details }
   const body: ApiErrorBody = {
     error: { code, message: errors[code].message, details },
   }

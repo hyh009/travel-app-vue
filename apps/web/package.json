@@ -17,8 +17,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@douxcode/vue-spring-bottom-sheet": "^3.2.0",
     "@mdi/js": "^7.4.47",
     "@travel/shared": "workspace:*",
+    "@vueuse/core": "^15.0.0",
     "leaflet": "^1.9.4",
     "pinia": "^4.0.3",
     "vue": "^3.5.42",

@@ -13,9 +13,11 @@ interface Props {
   places: PlaceSummary[]
   selectedId: string | null
   hoveredId: string | null
+  // 地圖下緣被 bottom sheet 蓋住的高度(px)。飛過去、放進畫面時,要讓目標落在「看得到的那塊」中央
+  bottomInset?: number
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { bottomInset: 0 })
 const emit = defineEmits<{
   'bounds-change': [bounds: Viewport]
   select: [id: string]
@@ -31,19 +33,43 @@ const markers = new Map<string, L.CircleMarker>()
 let resizeObserver: ResizeObserver | null = null
 
 // ── Function ──
-// 飛得很遠(例如從北部搜到南投)時,Leaflet 預設的飛行動畫要 4~5 秒,這段時間列表沒有任何回饋,
-// 看起來像沒反應。遠距離固定 1.5 秒;近距離維持預設,因為預設本來就比較快
-const FAR_FLY_METERS = 30_000
-const FAR_FLY_SECONDS = 1.5
+// 離很遠(超過 15 公里,例如從台北搜到南投)就不飛了,直接跳過去:飛行動畫要好幾秒,途中列表是舊的、
+// 容器大小改變還會多觸發 moveend。跳過去的話 moveend 同步觸發,沒有「飛行中」這段空窗。
+// 近距離維持飛行,保留位置關係的動畫感
+const JUMP_METERS = 15_000
 
-function flyTo(lat: number, lng: number) {
-  if (!map) return
-  const far = map.getCenter().distanceTo([lat, lng]) > FAR_FLY_METERS
-  map.flyTo(
-    [lat, lng],
-    Math.max(map.getZoom(), 15),
-    far ? { duration: FAR_FLY_SECONDS } : undefined,
-  )
+// 飛行中:目標中心點,和結束這趟飛行的函式。
+// 飛行途中容器大小改變(例如手機鍵盤收起)時,Leaflet 會額外觸發 moveend,那時地圖還拉得很遠,
+// 範圍會超過後端上限(400)。所以還沒到目標之前的 moveend 一律忽略
+const ARRIVE_METERS = 20
+// 保底:飛行被別的方式打斷(例如縮放手勢)時,不會永遠卡在「飛行中」
+const FLIGHT_TIMEOUT_MS = 6000
+let flight: { center: L.LatLng; end: () => void } | null = null
+
+// 回傳的 Promise 在飛到目標時 resolve,呼叫端可以知道什麼時候飛完
+function flyTo(lat: number, lng: number): Promise<void> {
+  if (!map) return Promise.resolve()
+  const zoom = Math.max(map.getZoom(), 15)
+  // 下緣被蓋住時,地圖中心要比目標再往下半個被蓋住的高度,目標才會在看得到的那塊中央
+  const center = map.unproject(map.project([lat, lng], zoom).add([0, props.bottomInset / 2]), zoom)
+  flight?.end() // 前一趟還沒飛完就被這一趟取代
+  if (map.getCenter().distanceTo(center) > JUMP_METERS) {
+    map.setView(center, zoom, { animate: false })
+    return Promise.resolve()
+  }
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => current.end(), FLIGHT_TIMEOUT_MS)
+    const current = {
+      center,
+      end: () => {
+        clearTimeout(timer)
+        if (flight === current) flight = null
+        resolve()
+      },
+    }
+    flight = current
+    map?.flyTo(center, zoom)
+  })
 }
 
 // 把一個地區的外框放進畫面。縮放不會低於最小縮放(大縣市會停在中心附近);
@@ -56,8 +82,14 @@ function fitBounds(b: SearchArea['bounds']) {
       [b.neLat, b.neLng],
     ],
     // 不播動畫:篩選條件和畫面範圍同時就位,只查一次(動畫中會先用舊範圍查出空結果而閃一下)
-    { maxZoom: 15, animate: false },
+    { maxZoom: 15, animate: false, paddingBottomRight: [0, props.bottomInset] },
   )
+}
+
+function handleMoveEnd() {
+  if (flight && map && map.getCenter().distanceTo(flight.center) > ARRIVE_METERS) return
+  flight?.end()
+  emitBounds()
 }
 
 function emitBounds() {
@@ -117,7 +149,9 @@ onMounted(() => {
 
   layer = L.layerGroup().addTo(map)
 
-  map.on('moveend', emitBounds)
+  map.on('moveend', handleMoveEnd)
+  // 使用者自己拖曳就是接手了,不再當作飛行中
+  map.on('dragstart', () => flight?.end())
   emitBounds()
   syncMarkers()
 
@@ -126,6 +160,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  flight?.end()
   resizeObserver?.disconnect()
   resizeObserver = null
   map?.remove()
@@ -173,6 +208,13 @@ watch(
 </style>
 
 <style>
+/* 觸控裝置用雙指縮放,不需要按鈕(會擋畫面) */
+@media (pointer: coarse) {
+  .leaflet-control-zoom {
+    display: none;
+  }
+}
+
 /* tooltip 是 Leaflet 自己建立的 DOM,不在這個元件的 scope 內,所以用全域樣式 */
 .place-tip {
   padding: 6px 12px;

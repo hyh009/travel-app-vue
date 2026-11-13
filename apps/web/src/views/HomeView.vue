@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch, onMounted } from 'vue'
+import { useMediaQuery, useWindowSize } from '@vueuse/core'
 import { mdiAlertCircleOutline, mdiAlertOutline, mdiCrosshairsGps } from '@mdi/js'
 import type { PlaceSummary, SearchArea, Viewport } from '@travel/shared'
 import PlaceList from '@/components/PlaceList.vue'
 import { usePlaces } from '@/composables/usePlaces'
 import PlaceMap from '@/components/PlaceMap.vue'
+import PlaceSheet from '@/components/PlaceSheet.vue'
 import SearchBox from '@/components/SearchBox.vue'
+import SearchDialog from '@/components/SearchDialog.vue'
 import { useFavoriteMutation } from '@/composables/useFavoriteMutation'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { useRouter, useRoute } from 'vue-router'
+import { useAreaFilter } from '@/composables/useAreaFilter'
+import { useSelection } from '@/composables/useSelection'
 import { ROUTE_NAME } from '@/router/utils'
 
 const router = useRouter()
@@ -19,15 +24,22 @@ const toast = useToast()
 
 // 畫面範圍由地圖決定,每次拖曳都會整個換掉;地區篩選由使用者操作決定。兩者分開存
 const bounds = ref<Viewport | null>(null)
-const areaFilter = ref<SearchArea | null>(null)
-// 標籤和空狀態都要顯示的地區名稱,例如「新北市永和區」
-const areaLabel = computed(
-  () => areaFilter.value && `${areaFilter.value.city}${areaFilter.value.town ?? ''}`,
-)
-const selectedId = ref<string | null>(null)
+
+const { areaFilter, areaLabel, clearAreaFilter, setArea } = useAreaFilter()
+const { selectedId, hoveredId, setSelectId, setHoverId } = useSelection()
+
 const listRef = useTemplateRef<HTMLDivElement>('listContainer')
 const mapRef = useTemplateRef<InstanceType<typeof PlaceMap>>('placeMap')
-const hoveredId = ref<string | null>(null)
+const sheetRef = useTemplateRef<InstanceType<typeof PlaceSheet>>('sheet')
+
+// 版面看「空間夠不夠」:窄螢幕用 bottom sheet,寬螢幕用左邊列表 + 右邊地圖。
+// 960px 是 Vuetify 的 md 斷點:左邊列表 400px,地圖至少還有 560px
+const isCompact = useMediaQuery('(max-width: 959.98px)')
+// 操作方式看「用手指還是滑鼠」:手指用全螢幕搜尋頁(螢幕鍵盤會佔掉半個畫面)
+const isTouch = useMediaQuery('(pointer: coarse)')
+const { height: windowHeight } = useWindowSize()
+// sheet 半開時蓋住地圖下半部;飛過去、放進畫面時要把這塊讓出來
+const mapBottomInset = computed(() => (isCompact.value ? Math.round(windowHeight.value / 2) : 0))
 
 // 送給後端的查詢 = 畫面範圍 + 地區篩選(沒篩選時 city、town 是 undefined,不會送出)
 const placesQuery = computed(() => {
@@ -37,6 +49,11 @@ const placesQuery = computed(() => {
 })
 
 const { data, loading, error, setFavorite } = usePlaces(placesQuery, () => auth.user?.id)
+
+// 飛行途中也會收到清單(舊範圍的查詢),那時目標還在地圖外,不能因為它不在清單裡就取消選取
+const isFlying = ref(false)
+// 飛行中列表還是舊範圍的內容:不能顯示成「沒有景點」或舊的筆數警告,要跟載入中一樣處理
+const listLoading = computed(() => loading.value || isFlying.value)
 const { toggleFavorite, changeFavorite } = useFavoriteMutation(setFavorite)
 
 // 地圖範圍的狀態提示,浮在地圖上:載入失敗 > 景點太多(後端有筆數上限)
@@ -46,11 +63,11 @@ interface MapNotice {
 }
 // 範圍內沒有景點:是列表的空狀態,不是地圖的警告。載入中、載入失敗時不算
 const isEmpty = computed(
-  () => !loading.value && !error.value && !!data.value && data.value.places.length === 0,
+  () => !listLoading.value && !error.value && !!data.value && data.value.places.length === 0,
 )
 const mapNotice = computed<MapNotice | null>(() => {
   if (error.value) return { type: 'error', text: '載入失敗,請稍後再試' }
-  if (loading.value || !data.value) return null
+  if (listLoading.value || !data.value) return null
   const { places, total } = data.value
   if (total > places.length) {
     return { type: 'warning', text: `顯示 ${places.length} / ${total} 個,放大地圖可發現更多景點` }
@@ -62,30 +79,32 @@ function handleBoundsChange(value: Viewport) {
   bounds.value = value
 }
 
-function handleSelectIdChange(id: string) {
-  selectedId.value = id
+// 點地圖上的標記:選取,並把 sheet 拉到半開讓使用者看到對應的卡片
+function handleMapSelect(id: string) {
+  setSelectId(id)
+  sheetRef.value?.snapTo('half')
 }
 
-function handleHoverIdChange(id: string | null) {
-  hoveredId.value = id
-}
-
-function clearAreaFilter() {
-  areaFilter.value = null
-}
-
+// 點卡片的定位按鈕:滿版時地圖被蓋住看不到,所以拉到半開(已經是半開或收起也一樣到半開)
 function handleFocusCard(id: string) {
-  selectedId.value = id
+  setSelectId(id)
+  sheetRef.value?.snapTo('half')
   const targetPlace = data.value?.places.find((p) => p.id === id)
   if (!targetPlace) return
   mapRef.value?.flyTo(targetPlace.lat, targetPlace.lng)
 }
 
 // 搜尋選到景點:用搜尋結果自己的座標飛過去(它通常還不在目前載入的清單裡)
-function handleSearchPlace(place: PlaceSummary) {
-  areaFilter.value = null
-  selectedId.value = place.id
-  mapRef.value?.flyTo(place.lat, place.lng)
+async function handleSearchPlace(place: PlaceSummary) {
+  clearAreaFilter()
+  setSelectId(place.id)
+  sheetRef.value?.snapTo('half')
+  isFlying.value = true
+  try {
+    await mapRef.value?.flyTo(place.lat, place.lng)
+  } finally {
+    isFlying.value = false
+  }
 }
 
 function focusArea() {
@@ -95,17 +114,37 @@ function focusArea() {
 
 // 搜尋選到地區:把地區外框放進畫面,不選任何景點
 function handleSearchArea(area: SearchArea) {
-  selectedId.value = null
-  areaFilter.value = area
+  setSelectId(null)
+  setArea(area)
+  sheetRef.value?.snapTo('half')
   focusArea()
 }
 
 function scrollToSelected() {
   const id = selectedId.value
-  const el = id ? listRef.value?.querySelector(`[data-id="${CSS.escape(id)}"]`) : null
-  if (el) el.scrollIntoView({ inline: 'center' })
+  // 列表可能在左邊的容器,也可能在 bottom sheet 裡(傳送到 body),所以從整份文件找
+  const el = id ? document.querySelector(`.place-list [data-id="${CSS.escape(id)}"]`) : null
+  // 列表都是直向的,貼到上緣最順
+  if (el) el.scrollIntoView({ block: 'start' })
+  // 沒有選取:列表回到最上面。窄螢幕的列表在 bottom sheet 裡,不是 listRef
+  else if (isCompact.value) sheetRef.value?.scrollToTop()
   else listRef.value?.scrollTo({ top: 0 })
 }
+
+// 桌機的左側列表和 bottom sheet 裡的列表,吃同一組 props
+const listProps = computed(() => ({
+  places: data.value?.places ?? [],
+  loading: listLoading.value,
+  empty: isEmpty.value,
+  areaLabel: areaLabel.value,
+  selectedId: selectedId.value,
+}))
+
+// bottom sheet 標題列:收合時只看得到這一行
+const sheetTitle = computed(() => {
+  if (!data.value) return '載入中…'
+  return `${areaLabel.value ?? '此範圍'} ${data.value.total} 個景點`
+})
 
 function handleToggleFavorite(attractionId: string) {
   if (!auth.isLoggedIn) {
@@ -123,16 +162,6 @@ function handleToggleFavorite(attractionId: string) {
   toggleFavorite(targetPlace)
 }
 
-function handleListWheel(e: WheelEvent) {
-  const el = listRef.value
-  if (!el) return
-  if (el.scrollWidth <= el.clientWidth) return
-  if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
-
-  e.preventDefault()
-  el.scrollLeft += e.deltaY
-}
-
 onMounted(async () => {
   const id = route.query.favorite
   if (typeof id !== 'string' || !auth.isLoggedIn) return
@@ -146,8 +175,12 @@ onMounted(async () => {
 watch(
   () => data.value?.places.map((p) => p.id).join(','),
   () => {
-    if (selectedId.value && !data.value?.places.some((p) => p.id === selectedId.value)) {
-      selectedId.value = null
+    if (
+      selectedId.value &&
+      !isFlying.value &&
+      !data.value?.places.some((p) => p.id === selectedId.value)
+    ) {
+      setSelectId(null)
     }
     scrollToSelected()
   },
@@ -161,23 +194,27 @@ watch(selectedId, () => scrollToSelected(), {
 <template>
   <div class="main">
     <div
+      v-if="!isCompact"
       ref="listContainer"
       class="list-container"
-      @wheel="handleListWheel"
     >
       <PlaceList
-        :places="data?.places ?? []"
-        :loading="loading"
-        :empty="isEmpty"
-        :area-label="areaLabel"
-        :selected-id="selectedId"
-        @hover-card="handleHoverIdChange"
+        v-bind="listProps"
+        @hover-card="setHoverId"
         @focus-card="handleFocusCard"
         @toggle-favorite="handleToggleFavorite"
       />
     </div>
     <div class="map-container">
+      <!-- 觸控裝置:點了開全螢幕搜尋頁(鍵盤佔掉半個畫面,行內下拉選單不好用);滑鼠裝置:行內下拉 -->
+      <SearchDialog
+        v-if="isTouch"
+        class="map-search"
+        @select-place="handleSearchPlace"
+        @select-area="handleSearchArea"
+      />
       <SearchBox
+        v-else
         class="map-search"
         @select-place="handleSearchPlace"
         @select-area="handleSearchArea"
@@ -211,10 +248,46 @@ watch(selectedId, () => scrollToSelected(), {
         :places="data?.places ?? []"
         :selected-id="selectedId"
         :hovered-id="hoveredId"
+        :bottom-inset="mapBottomInset"
         @bounds-change="handleBoundsChange"
-        @select="handleSelectIdChange"
+        @select="handleMapSelect"
       />
     </div>
+    <PlaceSheet
+      v-if="isCompact"
+      ref="sheet"
+    >
+      <template #header>
+        <div class="sheet-header">
+          <span class="sheet-title">{{ sheetTitle }}</span>
+          <!-- 地圖本身的版權標示會被面板蓋住,OpenStreetMap 要求看得到,所以放在這裡 -->
+          <a
+            class="sheet-attribution"
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noopener"
+          >
+            © OpenStreetMap
+          </a>
+          <!-- 載入中:放在標題列(不會跟著列表捲走),而且脫離版面流,不會把卡片推下去 -->
+          <v-progress-linear
+            v-if="listLoading"
+            class="sheet-loading"
+            color="primary"
+            absolute
+            location="bottom"
+            indeterminate
+            height="2"
+          />
+        </div>
+      </template>
+      <PlaceList
+        v-bind="listProps"
+        vertical
+        @focus-card="handleFocusCard"
+        @toggle-favorite="handleToggleFavorite"
+      />
+    </PlaceSheet>
   </div>
 </template>
 
@@ -287,21 +360,30 @@ watch(selectedId, () => scrollToSelected(), {
   color: rgb(var(--v-theme-on-error));
 }
 
-@media (max-width: 1024px) {
-  .main {
-    flex-direction: column-reverse;
+/* 觸控裝置沒有縮放按鈕,搜尋框和標籤靠左就好 */
+@media (pointer: coarse) {
+  .map-search {
+    left: 12px;
+    width: calc(100% - 24px);
   }
-  .list-container {
-    width: 100%;
-    /* 固定高度:列表換內容時地圖大小不會跟著變 */
-    height: 260px;
-    flex: none;
-    overflow-y: hidden;
-    overflow-x: auto;
-    scrollbar-width: none;
+  .map-filter {
+    left: 12px;
   }
-  .list-container::-webkit-scrollbar {
-    display: none;
-  }
+}
+
+.sheet-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sheet-title {
+  font-size: 15px;
+  font-weight: 500;
+}
+.sheet-attribution {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.6);
 }
 </style>

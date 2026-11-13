@@ -142,6 +142,8 @@ const emit = defineEmits<{
   font-size: 17px;
   font-weight: 600;
   line-height: 1.35;
+  /* .content 的高度由縮圖決定,標題預設會被擠壓,第二行就被切掉了;不要讓它縮 */
+  flex-shrink: 0;
   /* 名稱很長時最多兩行 */
   display: -webkit-box;
   -webkit-line-clamp: 2;

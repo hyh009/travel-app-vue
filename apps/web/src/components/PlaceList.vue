@@ -11,6 +11,8 @@ interface Props {
   // 有地區篩選時的地區名稱;空狀態會改成說明是篩選造成的
   areaLabel: string | null
   selectedId: string | null
+  // 放在 bottom sheet 裡(窄螢幕)。載入條改放 sheet 標題列,卡片高度由內容決定
+  vertical?: boolean
 }
 
 const props = defineProps<Props>()
@@ -25,10 +27,14 @@ const emit = defineEmits<{
 <template>
   <div
     class="place-list"
-    :class="{ 'is-empty': props.empty }"
+    :class="{ 'is-empty': props.empty, 'is-vertical': props.vertical }"
   >
+    <!-- absolute:脫離版面流。放在流裡的話,出現/消失會把所有卡片推下去再彈回來 -->
     <v-progress-linear
-      v-if="props.loading"
+      v-if="props.loading && !props.vertical"
+      class="place-loading"
+      color="primary"
+      absolute
       indeterminate
     />
     <div
@@ -64,6 +70,7 @@ const emit = defineEmits<{
 
 <style scoped>
 .place-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -74,6 +81,13 @@ const emit = defineEmits<{
   min-height: 100%;
   align-items: center;
   justify-content: center;
+}
+/* bottom sheet 裡的容器高度由內容決定,min-height: 100% 沒有可靠的基準:
+   列表縮水時會卡在上一次的高度(例如 366 張卡片的 5 萬 px),空狀態就被置中到很下面 */
+.place-list.is-vertical.is-empty {
+  min-height: 0;
+  justify-content: flex-start;
+  padding: 24px 0;
 }
 .place-empty {
   display: flex;
@@ -93,24 +107,22 @@ const emit = defineEmits<{
   font-weight: 500;
 }
 
-@media (max-width: 1024px) {
-  .place-list {
-    flex-direction: row;
-    width: max-content;
-    height: 100%;
-  }
-  /* 橫排時空狀態要撐滿整個列表寬度才置得到中間 */
-  .place-list.is-empty {
-    width: 100%;
-  }
-  .place-card {
-    width: 280px;
-    flex-shrink: 0;
-    height: 100%;
-  }
-  /* 載入條在橫排裡也當成一格,寬度和卡片一樣 */
-  .place-list > :not(.place-card) {
-    flex: 0 0 280px;
-  }
+/* 直向列表的卡片高度由內容決定。卡片預設的 height: 100% 在 bottom sheet 裡會變成
+   「所有卡片平分列表高度」,名稱一長下面的按鈕就被切掉 */
+.place-list.is-vertical .place-card {
+  height: auto;
+  flex-shrink: 0;
+}
+/* 名稱想多長就多長(橫向列表的卡片高度固定,維持兩行上限) */
+.place-list.is-vertical .place-card :deep(.name) {
+  display: block;
+  line-clamp: unset;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+/* scrollIntoView 把卡片貼到捲動區上緣時,留一點空間給卡片的陰影和選取外框 */
+.place-list.is-vertical .place-card {
+  scroll-margin-top: 12px;
 }
 </style>
