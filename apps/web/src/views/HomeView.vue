@@ -85,8 +85,10 @@ function handleMapSelect(id: string) {
   sheetRef.value?.snapTo('half')
 }
 
+// 點卡片的定位按鈕:滿版時地圖被蓋住看不到,所以拉到半開(已經是半開或收起也一樣到半開)
 function handleFocusCard(id: string) {
   setSelectId(id)
+  sheetRef.value?.snapTo('half')
   const targetPlace = data.value?.places.find((p) => p.id === id)
   if (!targetPlace) return
   mapRef.value?.flyTo(targetPlace.lat, targetPlace.lng)
