@@ -11,6 +11,7 @@ export const ERROR_CODES = [
   'EMAIL_TAKEN',
   'INTERNAL_ERROR',
   'PLACE_NOT_FOUND',
+  'RATE_LIMITED',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]
