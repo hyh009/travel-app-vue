@@ -14,6 +14,7 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
   EMAIL_TAKEN: '這個 Email 已經註冊過了',
   INTERNAL_ERROR: '伺服器發生問題,請稍後再試',
   PLACE_NOT_FOUND: '找不到這個景點',
+  RATE_LIMITED: '嘗試次數太多,請稍後再試',
 }
 
 export function errorMessage(err: unknown) {

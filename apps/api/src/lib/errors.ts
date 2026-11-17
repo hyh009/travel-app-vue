@@ -16,6 +16,8 @@ export const errors: Record<ErrorCode, { status: number; message: string }> = {
   PLACE_NOT_FOUND: { status: 404, message: 'Place not found' },
   // 409
   EMAIL_TAKEN: { status: 409, message: 'Email already registered' },
+  // 429
+  RATE_LIMITED: { status: 429, message: 'Too many requests' },
   // 500
   INTERNAL_ERROR: { status: 500, message: 'Internal server error' },
 }

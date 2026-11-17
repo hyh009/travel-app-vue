@@ -3,20 +3,21 @@ import { Router } from 'express'
 import { REFRESH_COOKIE, clearAuthCookies, setAuthCookies } from '../lib/cookies.js'
 import { HttpError } from '../lib/errors.js'
 import { parseBody } from '../lib/validate.js'
+import { authLimiter } from '../middleware/rateLimit.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { loginSchema, registerSchema } from '@travel/shared'
 import * as authService from '../services/auth.service.js'
 
 const router = Router()
 
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const input = parseBody(registerSchema, req.body)
   const { user, tokens } = await authService.register(input)
   setAuthCookies(res, tokens)
   res.status(201).json({ user } satisfies AuthResponse)
 })
 
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const input = parseBody(loginSchema, req.body)
   const { user, tokens } = await authService.login(input)
   setAuthCookies(res, tokens)
