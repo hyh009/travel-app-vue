@@ -10,5 +10,19 @@
   },
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "eslint.workingDirectories": [{ "directory": "apps/web" }, { "directory": "apps/api" }]
+
+  "eslint.workingDirectories": [
+    { "directory": "apps/web", "!cwd": true },
+    { "directory": "apps/api", "!cwd": true }
+  ],
+
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  }
 }
