@@ -8,6 +8,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pyright>=1.1.414",
     "pytest>=9.2.0",
     "ruff>=0.17.5",
 ]
@@ -18,4 +19,9 @@ testpaths = ["tests"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+[tool.pyright]
+include = ["app", "tests"]
+typeCheckingMode = "standard"
+
 
