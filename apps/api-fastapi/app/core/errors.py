@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+from fastapi.responses import JSONResponse
+
 
 class ErrorCode(StrEnum):
     VALIDATION_FAILED = "VALIDATION_FAILED"
@@ -45,3 +47,11 @@ ERRORS: dict[ErrorCode, ErrorInfo] = {
     # 500
     ErrorCode.INTERNAL_ERROR: ErrorInfo(500, "Internal server error"),
 }
+
+
+def error_response(code: ErrorCode) -> JSONResponse:
+    info = ERRORS[code]
+    return JSONResponse(
+        status_code=info.status,
+        content={"error": {"code": code, "message": info.message}},
+    )
